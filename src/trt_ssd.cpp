@@ -59,7 +59,7 @@ namespace ssd
     }
   }
 
-  Model::Model(const std::string &onnx_path, const std::string &precision, const int max_batch_size, const size_t workspace_size, const bool verbose)
+  Model::Model(const std::string &onnx_path, const std::string &precision, const int max_batch_size, const bool verbose, const size_t workspace_size)
   {
     trt::Logger logger(verbose);
     runtime_ = unique_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(logger));

@@ -44,7 +44,7 @@ namespace ssd
 
   public:
     explicit Model(const std::string &engine_path, bool verbose = false);
-    Model(const std::string &onnx_path, const std::string &precision, const int max_batch_size, const size_t workspace_size = (1ULL << 30), const bool verbose = false);
+    Model(const std::string &onnx_path, const std::string &precision, const int max_batch_size, const bool verbose = false, const size_t workspace_size = (1ULL << 30));
 
     ~Model();
 
