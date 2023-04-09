@@ -44,9 +44,11 @@ namespace ssd
 
   public:
     explicit Model(const std::string &engine_path, bool verbose = false);
+    Model(const std::string &onnx_path, const std::string &precision, const int max_batch_size, const size_t workspace_size = (1ULL << 30), const bool verbose = false);
 
     ~Model();
 
+    void save(const std::string &path) const;
     bool detect(const cv::Mat &img, float *out_scores, float *out_boxes);
 
     std::vector<int> getInputDims() const;

@@ -1,5 +1,7 @@
 #include "trt_ssd.hpp"
 
+#include <NvOnnxParser.h>
+
 #include <fstream>
 #include <functional>
 #include <memory>
@@ -57,11 +59,96 @@ namespace ssd
     }
   }
 
+  Model::Model(const std::string &onnx_path, const std::string &precision, const int max_batch_size, const size_t workspace_size, const bool verbose)
+  {
+    trt::Logger logger(verbose);
+    runtime_ = unique_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(logger));
+    if (!runtime_) {
+      std::cerr << "[ERROR] Fail to create engine!!" << std::endl;
+      std::exit(1);
+    }
+    bool fp16 = precision.compare("FP16") == 0;
+    bool int8 = precision.compare("INT8") == 0;
+
+    // Create builder
+    auto builder = unique_ptr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(logger));
+    if (!builder) {
+      std::cerr << "[ERROR] Fail to create builder!!" << std::endl;
+      std::exit(1);
+    }
+    auto config = unique_ptr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
+    if (!config) {
+      std::cerr << "[ERROR] Fail to create builder config!!" << std::endl;
+      std::exit(1);
+    }
+
+    if (fp16 || int8) {
+      config->setFlag(nvinfer1::BuilderFlag::kFP16);
+    }
+    #if (NV_TENSORRT_MAJOR * 1000) + (NV_TENSORRT_MINOR * 100) + NV_TENSOR_PATCH >= 8400
+      config->setMemoryPoolLimit(nvinfer1::MemoryPoolType::kWORKSPACE, workspace_size);
+    #else
+      config->setMaxWorkspaceSize(workspace_size);
+    #endif
+
+    // Parse onnx FCN
+    std::cout << "[INFO] Building " << precision << " core model..." << std::endl;
+    const auto flag = 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+    auto network = unique_ptr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(flag));
+    if (!network) {
+      std::cerr << "[ERROR] Fail to create network!!" << std::endl;
+      std::exit(1);
+    }
+    auto parser = unique_ptr<nvonnxparser::IParser>(nvonnxparser::createParser(*network, logger));
+    if (!parser) {
+      std::cerr << "[ERROR] Fail to create parser!!" << std::endl;
+      std::exit(1);
+    }
+
+    parser->parseFromFile(onnx_path.c_str(), static_cast<int>(nvinfer1::ILogger::Severity::kERROR));
+    
+    // Create profile
+    auto profile = builder->createOptimizationProfile();
+    if (!profile) {
+      std::cerr << "[ERROR] Fail to create profile!!" << std::endl;
+      std::exit(1);
+    }
+    profile->setDimensions(network->getInput(0)->getName(), nvinfer1::OptProfileSelector::kMIN, nvinfer1::Dims4{1, 3, 300, 300});
+    profile->setDimensions(network->getInput(0)->getName(), nvinfer1::OptProfileSelector::kOPT, nvinfer1::Dims4{max_batch_size, 3, 300, 300});
+    profile->setDimensions(network->getInput(0)->getName(), nvinfer1::OptProfileSelector::kMAX, nvinfer1::Dims4{max_batch_size, 3, 300, 300});
+    config->addOptimizationProfile(profile);
+
+    // Build engine
+    std::cout << "[INFO] Applying optimizations and building TRT CUDA engine..." << std::endl;
+    plan_ = unique_ptr<nvinfer1::IHostMemory>(builder->buildSerializedNetwork(*network, *config));
+    if (!plan_) {
+      std::cerr << "[ERROR] Fail to create serialized network!!" << std::endl;
+      std::exit(1);
+    }
+    engine_ = unique_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(plan_->data(), plan_->size()));
+    if (!engine_) {
+      std::cerr << "[ERROR] Fail to create engine!!" << std::endl;
+      std::exit(1);
+    }
+    context_ = unique_ptr<nvinfer1::IExecutionContext>(engine_->createExecutionContext());
+    if (!context_) {
+      std::cerr << "[ERROR] Fail to create context!!" << std::endl;
+      std::exit(1);
+    }
+  }
+
   Model::~Model()
   {
     if (stream_) {
       cudaStreamDestroy(stream_);
     }
+  }
+
+  void Model::save(const std::string &path) const
+  {
+    std::cout << "[INFO] Writing to " << path << "..." << std::endl;
+    std::ofstream file(path, std::ios::out | std::ios::binary);
+    file.write(reinterpret_cast<const char *>(plan_->data()), plan_->size());
   }
 
   std::vector<float> Model::preprocess(const cv::Mat &img) const
