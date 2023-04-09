@@ -45,11 +45,11 @@ cv::Mat drawOutput(const cv::Mat &img, const float *scores, const float *boxes, 
         float y_offset = boxes[4 * i + 1] * img_h;
         float width = boxes[4 * i + 2] * img_w;
         float height = boxes[4 * i + 3]* img_h;
-        const int left = std::max(0, static_cast<int>(x_offset));
-        const int top = std::max(0, static_cast<int>(y_offset));
-        const int right = std::min(img_w, static_cast<int>(x_offset +  width));
-        const int bottom = std::min(img_h, static_cast<int>(y_offset + height));
-        cv::rectangle(viz, cv::Point(left, top), cv::Point(right, bottom), cv::Scalar(0, 0, 255), 3, 8, 0);
+        const int x1 = std::max(0, static_cast<int>(x_offset));
+        const int y1 = std::max(0, static_cast<int>(y_offset));
+        const int x2 = std::min(img_w, static_cast<int>(x_offset +  width));
+        const int y2 = std::min(img_h, static_cast<int>(y_offset + height));
+        cv::rectangle(viz, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 255), 3, 8, 0);
     }
 
     return viz;
