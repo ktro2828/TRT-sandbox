@@ -29,7 +29,6 @@ namespace ssd
     cuda::unique_ptr<float[]> input_d_{nullptr};
     cuda::unique_ptr<float[]> out_scores_d_{nullptr};
     cuda::unique_ptr<float[]> out_boxes_d_{nullptr};
-    cuda::unique_ptr<float[]> out_classes_d_{nullptr};
 
     std::string box_head_name_{"boxes"};
     std::string score_head_name_{"scores"};
@@ -48,7 +47,7 @@ namespace ssd
 
     ~Model();
 
-    bool detect(const cv::Mat &img, float *out_scores, float *out_boxes, float *out_classes);
+    bool detect(const cv::Mat &img, float *out_scores, float *out_boxes);
 
     std::vector<int> getInputDims() const;
     int getInputSize() const;

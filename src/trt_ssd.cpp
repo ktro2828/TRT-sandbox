@@ -39,7 +39,6 @@ namespace ssd
     input_d_ = cuda::make_unique<float[]>(getMaxBatchSize() * getInputSize());
     out_scores_d_ = cuda::make_unique<float[]>(getMaxBatchSize() * getMaxDets());
     out_boxes_d_ = cuda::make_unique<float[]>(getMaxBatchSize() * getMaxDets() * 4);
-    out_classes_d_ = cuda::make_unique<float[]>(getMaxBatchSize() * getMaxDets());
     cudaStreamCreate(&stream_);
 
     return true;
@@ -99,12 +98,12 @@ namespace ssd
     cudaStreamSynchronize(stream_);
   }
 
-  bool Model::detect(const cv::Mat &img, float *out_scores, float *out_boxes, float *out_classes)
+  bool Model::detect(const cv::Mat &img, float *out_scores, float *out_boxes)
   {
     const auto input_dims = getInputDims();
     const auto input = preprocess(img);
     CHECK_CUDA_ERROR(cudaMemcpy(input_d_.get(), input.data(), input.size() * sizeof(float), cudaMemcpyHostToDevice));
-    std::vector<void *> buffers{input_d_.get(), out_scores_d_.get(), out_boxes_d_.get(), out_classes_d_.get()};
+    std::vector<void *> buffers{input_d_.get(), out_scores_d_.get(), out_boxes_d_.get()};
     try {
       infer(buffers, 1);
     } catch (const std::runtime_error & e) {
@@ -112,7 +111,6 @@ namespace ssd
     }
     CHECK_CUDA_ERROR(cudaMemcpyAsync(out_scores, out_scores_d_.get(), sizeof(float) * getMaxDets(), cudaMemcpyDeviceToHost, stream_));
     CHECK_CUDA_ERROR(cudaMemcpyAsync(out_boxes, out_boxes_d_.get(), sizeof(float) * 4 * getMaxDets(), cudaMemcpyDeviceToHost, stream_));
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(out_classes, out_classes_d_.get(), sizeof(float) * getMaxDets(), cudaMemcpyDeviceToHost, stream_));
     cudaStreamSynchronize(stream_);
     return true;
   }
