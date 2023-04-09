@@ -1,11 +1,15 @@
 # TRT-sandbox
 
-A Sandbox of TensorRT.
+A sandbox of TensorRT.
 
-## Build
+## Build & Run
 
 ```shell
+# Build
 $ mkdir build && cd build
 $ cmake ..
 $ make -j$(nproc)
+
+# Run
+$ ./src/main IMG_PATH ENGINE_OR_ONNX_PATH
 ```
