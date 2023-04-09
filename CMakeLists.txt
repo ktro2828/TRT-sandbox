@@ -19,20 +19,22 @@ if (CUDA_FOUND)
         ${CUDA_TOOLKIT_ROOT_DIR}/lib64
         ${CUDA_TOOLKIT_ROOT_DIR}/lib
     )
+    message("CUDA_LIBRARIES: " ${CUDA_LIBRARIES})
+    message("CUBLAS_LIBRARIES: " ${CUBLAS_LIBRARIES})
 else()
     message(FATAL_ERROR "Can not find CUDA")
 endif()
 
 # For TensorRT
-list(APPEND PLUGINS "nvinfer")
-list(APPEND PLUGINS "nvonnxparser")
-list(APPEND PLUGINS "nvparsers")
+list(APPEND TRT_PLUGINS "nvinfer")
+list(APPEND TRT_PLUGINS "nvonnxparser")
+list(APPEND TRT_PLUGINS "nvparsers")
 
-foreach(libName ${PLUGINS})
+foreach(libName ${TRT_PLUGINS})
     find_library(${libName}_lib NAMES ${libName} "/usr" PATH_SUFFIES lib)
-    list(APPEND PLUGIN_LIBS ${${libName}_lib})
-    message("Add " ${${libName}_lib})
+    list(APPEND TRT_PLUGIN_LIBS ${${libName}_lib})
 endforeach()
+message("TRT_PLUGIN_LIBS: " ${TRT_PLUGIN_LIBS})
 
 # For subdirectories
 add_subdirectory(src)

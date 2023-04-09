@@ -1,9 +1,7 @@
 add_library(trt_ssd SHARED trt_ssd.cpp)
 
-message("CUDA_LIBRARIES" ${CUDA_LIBRARIES}) 
-message("CUBLAS_LIBRARIES" ${CUBLAS_LIBRARIES})
 target_link_libraries(trt_ssd
-    ${PLUGIN_LIBS}
+    ${TRT_PLUGIN_LIBS}
     ${CUDA_LIBRARIES}
     ${CUBLAS_LIBRARIES}
     # ${CUDNN_LIBRARIES}
