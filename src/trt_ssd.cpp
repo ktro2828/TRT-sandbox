@@ -113,9 +113,9 @@ namespace ssd
       std::cerr << "[ERROR] Fail to create profile!!" << std::endl;
       std::exit(1);
     }
-    profile->setDimensions(network->getInput(0)->getName(), nvinfer1::OptProfileSelector::kMIN, nvinfer1::Dims4{1, 3, 300, 300});
-    profile->setDimensions(network->getInput(0)->getName(), nvinfer1::OptProfileSelector::kOPT, nvinfer1::Dims4{max_batch_size, 3, 300, 300});
-    profile->setDimensions(network->getInput(0)->getName(), nvinfer1::OptProfileSelector::kMAX, nvinfer1::Dims4{max_batch_size, 3, 300, 300});
+    profile->setDimensions(network->getInput(0)->getName(), nvinfer1::OptProfileSelector::kMIN, nvinfer1::Dims4{1, channel_, height_, width_});
+    profile->setDimensions(network->getInput(0)->getName(), nvinfer1::OptProfileSelector::kOPT, nvinfer1::Dims4{max_batch_size, channel_, height_, width_});
+    profile->setDimensions(network->getInput(0)->getName(), nvinfer1::OptProfileSelector::kMAX, nvinfer1::Dims4{max_batch_size, channel_, height_, width_});
     config->addOptimizationProfile(profile);
 
     // Build engine
