@@ -19,8 +19,15 @@ if (CUDA_FOUND)
         ${CUDA_TOOLKIT_ROOT_DIR}/lib64
         ${CUDA_TOOLKIT_ROOT_DIR}/lib
     )
+    find_library(CUDNN_LIBRARIES
+        NAMES libcudnn.so${__cudnn_ver_suffix} libcudnn${__cudnn_ver_suffix}.dylib ${__cudnn_lib_win_name}
+        PATHS $ENV{LD_LIBRARY_PATH} ${__libpath_cudart} ${CUDNN_ROOT_DIR} ${PC_CUDNN_LIBRARY_DIRS} ${CMAKE_INSTALL_PREFIX}
+        PATH_SUFFIXES lib lib64 bin
+        DOC "CUDNN library."
+    )
     message("CUDA_LIBRARIES: " ${CUDA_LIBRARIES})
     message("CUBLAS_LIBRARIES: " ${CUBLAS_LIBRARIES})
+    message("CUDNN_LIBRARIES: " ${CUDNN_LIBRARIES})
 else()
     message(FATAL_ERROR "Can not find CUDA")
 endif()

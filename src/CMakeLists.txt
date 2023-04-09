@@ -4,7 +4,7 @@ target_link_libraries(trt_ssd
     ${TRT_PLUGIN_LIBS}
     ${CUDA_LIBRARIES}
     ${CUBLAS_LIBRARIES}
-    # ${CUDNN_LIBRARIES}
+    ${CUDNN_LIBRARIES}
 )
 
 target_include_directories(trt_ssd PUBLIC ${PROJECT_SOURCE_DIR}/include)
