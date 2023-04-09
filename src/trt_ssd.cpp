@@ -29,10 +29,12 @@ namespace ssd
   bool Model::prepare()
   {
     if (!engine_) {
+      std::cerr << "[WARN] engine is unloaded!!" << std::endl;
       return false;
     }
     context_ = unique_ptr<nvinfer1::IExecutionContext>(engine_->createExecutionContext());
     if (!context_) {
+      std::cerr << "[WARN] context is unloaded!!" << std::endl;
       return false;
     }
 
