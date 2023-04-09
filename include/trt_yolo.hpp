@@ -1,5 +1,5 @@
-#ifndef TRT_SSD_HPP_
-#define TRT_SSD_HPP_
+#ifndef TRT_YOLO_HPP_
+#define TRT_YOLO_HPP_
 
 #include <cuda_runtime.h>
 #include <NvInfer.h>
@@ -14,7 +14,7 @@
 #include "trt_utils.hpp"
 #include "cuda_utils.hpp"
 
-namespace ssd
+namespace yolo
 {
   class Model
   {
@@ -32,6 +32,7 @@ namespace ssd
     cuda::unique_ptr<float[]> input_d_{nullptr};
     cuda::unique_ptr<float[]> out_scores_d_{nullptr};
     cuda::unique_ptr<float[]> out_boxes_d_{nullptr};
+    cuda::unique_ptr<float[]> out_classes_d_{nullptr};
 
     std::string box_head_name_{"boxes"};
     std::string score_head_name_{"scores"};
@@ -63,6 +64,6 @@ namespace ssd
     void setInputSize(const int channel, const int width, const int height);
 
   }; // class Model
-} // namespace ssd 
+} // namespace yolo
 
-#endif // TRT_SSD_HPP_
+#endif // TRT_YOLO_HPP_

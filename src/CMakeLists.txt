@@ -8,6 +8,6 @@ target_link_libraries(trt_ssd
 )
 
 target_include_directories(trt_ssd PUBLIC ${PROJECT_SOURCE_DIR}/include)
-add_executable(main main.cpp)
-target_include_directories(main PUBLIC ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(main PUBLIC ${OpenCV_LIBS} trt_ssd)
+add_executable(det2d det2d.cpp)
+target_include_directories(det2d PUBLIC ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(det2d PUBLIC ${OpenCV_LIBS} trt_ssd)

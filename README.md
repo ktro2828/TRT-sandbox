@@ -11,5 +11,5 @@ $ cmake ..
 $ make -j$(nproc)
 
 # Run
-$ ./src/main IMG_PATH ENGINE_OR_ONNX_PATH
+$ ./src/det2d IMG_PATH ENGINE_OR_ONNX_PATH
 ```

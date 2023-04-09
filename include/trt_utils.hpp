@@ -1,3 +1,6 @@
+#ifndef TRT_UTILS_HPP_
+#define TRT_UTILS_HPP_
+
 #include <NvInfer.h>
 
 #include <iostream>
@@ -33,3 +36,5 @@ namespace trt
   }; // class Logger
 
 } // namespace trt_utils
+
+#endif // TRT_UTILS_HPP_
