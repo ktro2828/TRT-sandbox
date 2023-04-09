@@ -36,8 +36,9 @@ cv::Mat drawOutput(const cv::Mat &img, const float *scores, const float *boxes, 
     const auto img_h = img.rows;
     cv::Mat viz = img.clone();
     for (int i = 0; i < config.num_max_detections; ++i) {
+        // TODO: Add NMS?
         if (scores[i] < config.threshold) {
-            std::cerr << "[WARN] No boxes are detected!!" << std::endl;
+            std::cerr << "[WARN] No boxes are detected!! Score: " << scores[i] << " < " << config.threshold << std::endl;
             break;
         }
         float x_offset = boxes[4 * i] * img_w;
