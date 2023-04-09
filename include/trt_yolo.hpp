@@ -11,8 +11,8 @@
 #include <string>
 #include <vector>
 
-#include "trt_utils.hpp"
-#include "cuda_utils.hpp"
+#include "utils/trt_utils.hpp"
+#include "utils/cuda_utils.hpp"
 
 namespace yolo
 {
