@@ -15,6 +15,10 @@ find_package(CUDA REQUIRED)
 if (CUDA_FOUND)
     message("Cuda version: " ${CUDA_VERSION})
     include_directories(${CUDA_INCLUDE_DIRS})
+    find_library(CUBLAS_LIBRARIES cublas HINTS
+        ${CUDA_TOOLKIT_ROOT_DIR}/lib64
+        ${CUDA_TOOLKIT_ROOT_DIR}/lib
+    )
 else()
     message(FATAL_ERROR "Can not find CUDA")
 endif()

@@ -9,7 +9,7 @@
 int main(int argc, char* argv[])
 {
     if (argc != 2) {
-        std::cerr << "[ERROR] You must specify input images path!!" << std::endl;
+        std::cerr << "[ERROR] You must specify input image path!!" << std::endl;
         std::exit(1);
     }
 
@@ -19,3 +19,16 @@ int main(int argc, char* argv[])
     cv::imshow("img", img);
     cv::waitKey(0);
 }
+
+// TODO: move to inference.hpp
+
+// std::vector<cv::Mat> drawOutput(const std::vector<cv::Mat> &imgs, const float *scores, const float *boxes, const cv::Size &size)
+// {
+//     std::vector<cv::Mat> outputs;
+//     for (const auto img : imgs)
+//     {
+//         cv::Mat resized;
+//         cv::resize(img, resized, size)
+//         outputs.emplace_back(resized);
+//     }
+// }

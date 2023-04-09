@@ -1,7 +1,9 @@
 #include "trt_ssd.hpp"
 
 #include <fstream>
+#include <functional>
 #include <memory>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -24,12 +26,23 @@ namespace ssd
     delete[] buffer;
   }
 
-  void Model::prepare()
+  bool Model::prepare()
   {
-    if (engine_) {
-      context_ = unique_ptr<nvinfer1::IExecutionContext>(engine_->createExecutionContext());
+    if (!engine_) {
+      return false;
     }
+    context_ = unique_ptr<nvinfer1::IExecutionContext>(engine_->createExecutionContext());
+    if (!context_) {
+      return false;
+    }
+
+    input_d_ = cuda::make_unique<float[]>(getMaxBatchSize() * getInputSize());
+    out_scores_d_ = cuda::make_unique<float[]>(getMaxBatchSize() * getMaxDets());
+    out_boxes_d_ = cuda::make_unique<float[]>(getMaxBatchSize() * getMaxDets() * 4);
+    out_classes_d_ = cuda::make_unique<float[]>(getMaxBatchSize() * getMaxDets());
     cudaStreamCreate(&stream_);
+
+    return true;
   }
 
   Model::Model(const std::string & engine_path, bool verbose)
@@ -37,7 +50,10 @@ namespace ssd
     trt::Logger logger(verbose);
     runtime_ = unique_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(logger));
     load(engine_path);
-    prepare();
+    if (!prepare()) {
+      std::cerr << "[ERROR] Fail to prepare engine!!" << std::endl;
+      std::exit(1);
+    }
   }
 
   Model::~Model()
@@ -45,6 +61,30 @@ namespace ssd
     if (stream_) {
       cudaStreamDestroy(stream_);
     }
+  }
+
+  std::vector<float> Model::preprocess(const cv::Mat &img) const
+  {
+    cv::Mat rgb;
+    cv::cvtColor(img, rgb, cv::COLOR_BGR2RGB);
+
+    cv::resize(rgb, rgb, cv::Size(width_, height_));
+    cv::Mat img_float;
+    rgb.convertTo(img_float, CV_32FC3, 1 / 255.0);
+
+    // HWC to CHW
+    std::vector<cv::Mat> input_data(channel_);
+    cv::split(img_float, input_data);
+
+    std::vector<float> output(height_ * width_ * channel_);
+    float* data = output.data();
+    for (int i = 0; i < channel_; ++i)
+    {
+      memcpy(data, input_data[i].data, height_ * width_ * sizeof(float));
+      data += height_ * width_;
+    }
+
+    return output;
   }
 
   void Model::infer(std::vector<void *> &buffers, const int batch_size)
@@ -59,10 +99,34 @@ namespace ssd
     cudaStreamSynchronize(stream_);
   }
 
+  bool Model::detect(const cv::Mat &img, float *out_scores, float *out_boxes, float *out_classes)
+  {
+    const auto input_dims = getInputDims();
+    const auto input = preprocess(img);
+    CHECK_CUDA_ERROR(cudaMemcpy(input_d_.get(), input.data(), input.size() * sizeof(float), cudaMemcpyHostToDevice));
+    std::vector<void *> buffers{input_d_.get(), out_scores_d_.get(), out_boxes_d_.get(), out_classes_d_.get()};
+    try {
+      infer(buffers, 1);
+    } catch (const std::runtime_error & e) {
+      return false;
+    }
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(out_scores, out_scores_d_.get(), sizeof(float) * getMaxDets(), cudaMemcpyDeviceToHost, stream_));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(out_boxes, out_boxes_d_.get(), sizeof(float) * 4 * getMaxDets(), cudaMemcpyDeviceToHost, stream_));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(out_classes, out_classes_d_.get(), sizeof(float) * getMaxDets(), cudaMemcpyDeviceToHost, stream_));
+    cudaStreamSynchronize(stream_);
+    return true;
+  }
+
   std::vector<int> Model::getInputDims() const
   {
     auto dims = engine_->getBindingDimensions(0);
     return {dims.d[1], dims.d[2], dims.d[3]};
+  }
+
+  int Model::getInputSize() const
+  {
+    const auto input_dims = getInputDims();
+    return std::accumulate(input_dims.begin(), input_dims.end(), 1, std::multiplies<int>());
   }
 
   int Model::getMaxBatchSize() const { return engine_->getProfileDimensions(0, 0, nvinfer1::OptProfileSelector::kMAX).d[0]; }
@@ -72,6 +136,13 @@ namespace ssd
   {
     box_head_name_ = box_head_name;
     score_head_name_ = score_head_name;
+  }
+
+  void Model::setInputSize(const int channel, const int width, const int height)
+  {
+    channel_ = channel;
+    width_ = width;
+    height_ = height;
   }
 } // namespace ssd
 
