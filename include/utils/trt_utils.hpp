@@ -5,36 +5,30 @@
 
 #include <iostream>
 
-
-namespace trt
-{
-  struct Deleter
-  {
-    template<typename T>
-    void operator()(T *obj) const
-    {
-      if (obj) {
-        delete obj;
-      }
+namespace trt {
+struct Deleter {
+  template <typename T> void operator()(T *obj) const {
+    if (obj) {
+      delete obj;
     }
-  }; // struct Deleter
+  }
+}; // struct Deleter
 
-  class Logger : public nvinfer1::ILogger
-  {
-  private:
-    bool verbose_{true};
+class Logger : public nvinfer1::ILogger {
+private:
+  bool verbose_{true};
 
-  public:
-    explicit Logger(bool verbose) : verbose_(verbose) {}
+public:
+  explicit Logger(bool verbose) : verbose_(verbose) {}
 
-    void log(Severity severity, const char *msg) noexcept override
-    {
-      if (verbose_ || ((severity != Severity::kINFO) && (severity != Severity::kVERBOSE))) {
-        std::cout << msg << std::endl;
-      }
+  void log(Severity severity, const char *msg) noexcept override {
+    if (verbose_ ||
+        ((severity != Severity::kINFO) && (severity != Severity::kVERBOSE))) {
+      std::cout << msg << std::endl;
     }
-  }; // class Logger
+  }
+}; // class Logger
 
-} // namespace trt_utils
+} // namespace trt
 
 #endif // TRT_UTILS_HPP_
