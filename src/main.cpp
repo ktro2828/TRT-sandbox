@@ -69,9 +69,20 @@ int main(int argc, char* argv[])
     const std::string precision{"FP32"};
     const bool verbose{true};
 
-    std::string engine_path(argv[2]);
-    fs::path onnx_path{engine_path};
-    onnx_path.replace_extension("onnx");
+    std::string model_path(argv[2]);
+    std::string engine_path, onnx_path;
+    if (model_path.substr(model_path.find_last_of(".") + 1) == "engine") {
+        engine_path = model_path;
+        onnx_path = fs::path{model_path}.replace_extension("onnx").string();
+    } else if (model_path.substr(model_path.find_last_of(".") + 1) == "onnx") {
+        onnx_path = model_path;
+        engine_path = fs::path{model_path}.replace_extension("engine").string();
+    } else {
+        std::cerr << "[ERROR] Unexpected extension: " << model_path << std::endl;
+        std::exit(1);
+    }
+
+    std::cout << "[INFO] engine: " << engine_path << ", onnx: " << onnx_path << std::endl;
 
     std::unique_ptr<ssd::Model> model_ptr;
     if (fs::exists(engine_path)) {
