@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
     const Config config = {100, 0.5};
     const int max_batch_size{8};
     const std::string precision{"FP32"};
-    const bool verbose{true};
+    const bool verbose{false};
 
     std::string model_path(argv[2]);
     std::string engine_path, onnx_path;

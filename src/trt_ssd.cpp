@@ -130,9 +130,8 @@ namespace ssd
       std::cerr << "[ERROR] Fail to create engine!!" << std::endl;
       std::exit(1);
     }
-    context_ = unique_ptr<nvinfer1::IExecutionContext>(engine_->createExecutionContext());
-    if (!context_) {
-      std::cerr << "[ERROR] Fail to create context!!" << std::endl;
+    if (!prepare()) {
+      std::cerr << "[ERROR] Fail to prepare stream!!" << std::endl;
       std::exit(1);
     }
   }
