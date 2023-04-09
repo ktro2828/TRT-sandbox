@@ -11,7 +11,7 @@ namespace trt
     void operator()(T *obj) const
     {
       if (obj) {
-	delete obj;
+        delete obj;
       }
     }
   }; // struct Deleter
@@ -24,10 +24,10 @@ namespace trt
   public:
     explicit Logger(bool verbose) : verbose_(verbose) {}
 
-    void log(Serverity serverity, const char *msg) noexcept override
+    void log(Severity severity, const char *msg) noexcept override
     {
-      if (verbose_ || ((serverity != Serverity::kINFO) && (serverity != Serverity::kVERBOSE))) {
-	std::cout << msg << std::endl;
+      if (verbose_ || ((severity != Severity::kINFO) && (severity != Severity::kVERBOSE))) {
+        std::cout << msg << std::endl;
       }
     }
   }; // class Logger

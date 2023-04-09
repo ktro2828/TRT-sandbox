@@ -27,7 +27,7 @@ namespace ssd
   void Model::prepare()
   {
     if (engine_) {
-      context_ = unique_ptr<nvinfer1::IExecutionContext>(engine_->createExecuteContext());
+      context_ = unique_ptr<nvinfer1::IExecutionContext>(engine_->createExecutionContext());
     }
     cudaStreamCreate(&stream_);
   }
@@ -36,7 +36,7 @@ namespace ssd
   {
     trt::Logger logger(verbose);
     runtime_ = unique_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(logger));
-    load(path);
+    load(engine_path);
     prepare();
   }
 
@@ -53,7 +53,7 @@ namespace ssd
       throw std::runtime_error("Fail to create context.");
     }
 
-    auto intput_dims = engine_->getBindingDimensions(0);
+    auto input_dims = engine_->getBindingDimensions(0);
     context_->setBindingDimensions(0, nvinfer1::Dims4(batch_size, input_dims.d[1], input_dims.d[2], input_dims.d[3]));
     context_->enqueueV2(buffers.data(), stream_, nullptr);
     cudaStreamSynchronize(stream_);
@@ -62,9 +62,16 @@ namespace ssd
   std::vector<int> Model::getInputDims() const
   {
     auto dims = engine_->getBindingDimensions(0);
+    return {dims.d[1], dims.d[2], dims.d[3]};
   }
 
   int Model::getMaxBatchSize() const { return engine_->getProfileDimensions(0, 0, nvinfer1::OptProfileSelector::kMAX).d[0]; }
-  int Model::getMaxDets() const { return engine_>getBindingDimensinos(1).d[1]; }
+  int Model::getMaxDets() const { return engine_->getBindingDimensions(1).d[1]; }
+
+  void Model::setOuputHeadNames(std::string &box_head_name, std::string &score_head_name)
+  {
+    box_head_name_ = box_head_name;
+    score_head_name_ = score_head_name;
+  }
 } // namespace ssd
 
