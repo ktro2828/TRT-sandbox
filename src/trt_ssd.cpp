@@ -89,8 +89,8 @@ Model::Model(const ::std::string &onnx_path, const std::string &precision,
   if (fp16 || int8) {
     config->setFlag(nvinfer1::BuilderFlag::kFP16);
   }
-#if (NV_TENSORRT_MAJOR * 1000) + (NV_TENSORRT_MINOR * 100) +                   \
-        NV_TENSOR_PATCH >=                                                     \
+#if (NV_TENSORRT_MAJOR * 1000) + (NV_TENSORRT_MINOR * 100) + \
+        NV_TENSOR_PATCH >=                                   \
     8400
   config->setMemoryPoolLimit(nvinfer1::MemoryPoolType::kWORKSPACE,
                              workspace_size);
@@ -197,9 +197,9 @@ void Model::infer(std::vector<void *> &buffers, const int batch_size) {
   }
 
   auto input_dims = engine_->getBindingDimensions(0);
-  context_->setBindingDimensions(0, nvinfer1::Dims4(batch_size, input_dims.d[1],
-                                                    input_dims.d[2],
-                                                    input_dims.d[3]));
+  context_->setBindingDimensions(
+      0, nvinfer1::Dims4(batch_size, input_dims.d[1], input_dims.d[2],
+                         input_dims.d[3]));
   context_->enqueueV2(buffers.data(), stream_, nullptr);
   cudaStreamSynchronize(stream_);
 }
@@ -210,6 +210,7 @@ bool Model::detect(const cv::Mat &img, float *out_scores, float *out_boxes) {
   CHECK_CUDA_ERROR(cudaMemcpy(input_d_.get(), input.data(),
                               input.size() * sizeof(float),
                               cudaMemcpyHostToDevice));
+  // Should be changed depending on input(s)/output(s) order
   std::vector<void *> buffers{input_d_.get(), out_scores_d_.get(),
                               out_boxes_d_.get()};
   try {
@@ -255,4 +256,38 @@ void Model::setInputSize(const int channel, const int width, const int height) {
   width_ = width;
   height_ = height;
 }
-} // namespace ssd
+
+void Model::debug() const {
+  const auto dims0 = engine_->getBindingDimensions(0);
+  for (auto i = 0; i < dims0.nbDims; ++i) {
+    std::cout << "dims0[" << i << "]" << dims0.d[i] << std::endl;
+  }
+  const auto dims1 = engine_->getBindingDimensions(1);
+  for (auto i = 0; i < dims1.nbDims; ++i) {
+    std::cout << "dims1[" << i << "]" << dims1.d[i] << std::endl;
+  }
+  const auto dims2 = engine_->getBindingDimensions(2);
+  for (auto i = 0; i < dims2.nbDims; ++i) {
+    std::cout << "dims1[" << i << "]" << dims2.d[i] << std::endl;
+  }
+  const int out_dims2 = std::accumulate(std::begin(dims2.d), std::end(dims2.d),
+                                        1, std::multiplies<int>());
+  std::cout << "Output dims2: " << out_dims2 << std::endl;
+
+  const std::string inputs_name = engine_->getBindingName(0);
+  std::cout << "Inputs name: " << inputs_name << std::endl;
+  const size_t input_idx = engine_->getBindingIndex("input");
+  std::cout << "Inputs index: " << input_idx << std::endl;
+  const size_t scores_idx = engine_->getBindingIndex("scores");
+  std::cout << "Scores index: " << scores_idx << std::endl;
+  const size_t boxes_idx = engine_->getBindingIndex("boxes");
+  std::cout << "Boxes index: " << boxes_idx << std::endl;
+  const auto ndims = engine_->getNbBindings();
+  std::cout << ndims << std::endl;
+  const auto invalid_dims = engine_->getBindingDimensions(5);
+  std::cout << "Invalid dims: " << typeid(invalid_dims).name() << std::endl;
+  for (auto i = 0; i < invalid_dims.nbDims; ++i) {
+    std::cout << "Invalid dims[" << i << "]" << invalid_dims.d[i] << std::endl;
+  }
+}
+}  // namespace ssd

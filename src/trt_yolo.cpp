@@ -90,8 +90,8 @@ Model::Model(const std::string &onnx_path, const std::string &precision,
   if (fp16 || int8) {
     config->setFlag(nvinfer1::BuilderFlag::kFP16);
   }
-#if (NV_TENSORRT_MAJOR * 1000) + (NV_TENSORRT_MINOR * 100) +                   \
-        NV_TENSOR_PATCH >=                                                     \
+#if (NV_TENSORRT_MAJOR * 1000) + (NV_TENSORRT_MINOR * 100) + \
+        NV_TENSOR_PATCH >=                                   \
     8400
   config->setMemoryPoolLimit(nvinfer1::MemoryPoolType::kWORKSPACE,
                              workspace_size);
@@ -198,9 +198,9 @@ void Model::infer(std::vector<void *> &buffers, const int batch_size) {
   }
 
   auto input_dims = engine_->getBindingDimensions(0);
-  context_->setBindingDimensions(0, nvinfer1::Dims4(batch_size, input_dims.d[1],
-                                                    input_dims.d[2],
-                                                    input_dims.d[3]));
+  context_->setBindingDimensions(
+      0, nvinfer1::Dims4(batch_size, input_dims.d[1], input_dims.d[2],
+                         input_dims.d[3]));
   context_->enqueueV2(buffers.data(), stream_, nullptr);
   cudaStreamSynchronize(stream_);
 }
@@ -256,4 +256,4 @@ void Model::setInputSize(const int channel, const int width, const int height) {
   width_ = width;
   height_ = height;
 }
-} // namespace yolo
+}  // namespace yolo

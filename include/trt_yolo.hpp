@@ -15,9 +15,10 @@
 
 namespace yolo {
 class Model {
-  template <typename T> using unique_ptr = std::unique_ptr<T, trt::Deleter>;
+  template <typename T>
+  using unique_ptr = std::unique_ptr<T, trt::Deleter>;
 
-private:
+ private:
   unique_ptr<nvinfer1::IRuntime> runtime_{nullptr};
   unique_ptr<nvinfer1::IHostMemory> plan_{nullptr};
   unique_ptr<nvinfer1::ICudaEngine> engine_{nullptr};
@@ -41,7 +42,7 @@ private:
   std::vector<float> preprocess(const cv::Mat &img) const;
   void infer(std::vector<void *> &buffers, const int batch_size);
 
-public:
+ public:
   explicit Model(const std::string &engine_path, bool verbose = false);
   Model(const std::string &onnx_path, const std::string &precision,
         const int max_batch_size, const bool verbose = false,
@@ -61,7 +62,7 @@ public:
                          std::string &score_head_name);
   void setInputSize(const int channel, const int width, const int height);
 
-}; // class Model
-} // namespace yolo
+};  // class Model
+}  // namespace yolo
 
-#endif // TRT_YOLO_HPP_
+#endif  // TRT_YOLO_HPP_

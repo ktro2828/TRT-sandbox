@@ -19,13 +19,13 @@ struct Shape {
   int width;
   int height;
   int channel;
-}; // struct Shape
+};  // struct Shape
 
 struct Config {
   int num_max_detections{100};
   float threshold{0.5};
   Shape shape{300, 300, 3};
-}; // struct config
+};  // struct config
 
 cv::Mat drawOutput(const cv::Mat &img, const float *scores, const float *boxes,
                    const Config &config) {
