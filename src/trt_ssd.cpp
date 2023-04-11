@@ -1,5 +1,6 @@
 #include "trt_ssd.hpp"
 
+#include <NvInferPlugin.h>
 #include <NvOnnxParser.h>
 
 #include <fstream>
@@ -20,9 +21,14 @@ void Model::load(const std::string &path) {
   char *buffer = new char[size];
   file.read(buffer, size);
   file.close();
-  if (runtime_) {
+  if (auto did_init_plugins = initLibNvInferPlugins(nullptr, "");
+      did_init_plugins and runtime_) {
     engine_ = unique_ptr<nvinfer1::ICudaEngine>(
         runtime_->deserializeCudaEngine(buffer, size));
+  }
+  if (!engine_) {
+    std::cerr << "[ERROR]: Fail to deserialize engine!!" << std::endl;
+    std::exit(1);
   }
   delete[] buffer;
 }
