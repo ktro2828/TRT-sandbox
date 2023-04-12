@@ -23,7 +23,7 @@ void Model::load(const std::string & path)
   char * buffer = new char[size];
   file.read(buffer, size);
   file.close();
-  if (auto did_init_plugins = initLibNvInferPlugins(nullptr, ""); did_init_plugins and runtime_) {
+  if (runtime_) {
     engine_ = unique_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(buffer, size));
   }
   if (!engine_) {
@@ -205,10 +205,12 @@ bool Model::detect(const cv::Mat & img, float * out_scores, float * out_boxes)
 {
   const auto input_dims = getInputDims();
   const auto input = preprocess(img);
+  // BUG: cudaErrorInvalidValue (1)@: ... invalid argument
   CHECK_CUDA_ERROR(
     cudaMemcpy(input_d_.get(), input.data(), input.size() * sizeof(float), cudaMemcpyHostToDevice));
   // Should be changed depending on input(s)/output(s) order
-  std::vector<void *> buffers{input_d_.get(), out_scores_d_.get(), out_boxes_d_.get()};
+  // std::vector<void *> buffers{input_d_.get(), out_scores_d_.get(), out_boxes_d_.get()};
+  std::vector<void *> buffers{input_d_.get(), out_boxes_d_.get(), out_scores_d_.get()};
   try {
     infer(buffers, 1);
   } catch (const std::runtime_error & e) {

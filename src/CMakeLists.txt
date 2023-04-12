@@ -27,8 +27,5 @@ add_executable(det2d det2d.cpp)
 target_include_directories(det2d PUBLIC ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(det2d PUBLIC ${OpenCV_LIBS} trt_ssd)
 
-install(
-  TARGETS gather_topk_plugin grid_priors_plugin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin)
+# install( TARGETS gather_topk_plugin grid_priors_plugin LIBRARY DESTINATION lib
+# ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)

@@ -9,6 +9,7 @@ namespace fs = ::std::filesystem;
 // #endif
 
 #include "trt_ssd.hpp"
+#include "utils/common_utils.hpp"
 
 #include <cstdlib>
 #include <iostream>
@@ -67,9 +68,13 @@ int main(int argc, char * argv[])
   cv::Mat img = cv::imread(img_path);
 
   const Config config = {100, 0.5};
-  const int max_batch_size{8};
+  const int max_batch_size{1};  // TODO: support 8
   const std::string precision{"FP32"};
   const bool verbose{false};
+
+  // Load plugins
+  loadLibrary("src/libgather_topk_plugin.so");
+  loadLibrary("src/libgrid_priors_plugin.so");
 
   std::string model_path(argv[2]);
   std::string engine_path, onnx_path;
