@@ -1,6 +1,4 @@
 {
-  // auto formatter for C++
-  "C_Cpp.clang_format_style": "Google",
   "editor.formatOnSave": true,
   "editor.formatOnType": false,
   "editor.formatOnPaste": false,
@@ -8,9 +6,6 @@
     "editor.tabSize": 4,
     "editor.defaultFormatter": "ms-vscode.cpptools"
   },
-  "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, ColumnLimit: 100 }",
-  // linter for C++
-  "clang-tidy.checks": ["modernize-*"],
   // formmatter for cmake
   "cmakeFormat.exePath": "$HOME/.local/bin/cmake-format",
   "ros.distro": "humble",

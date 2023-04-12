@@ -25,13 +25,13 @@ enum pluginStatus_t {
     }                                                                         \
   }
 
-#define CUASSERT(status_)                                             \
-  {                                                                   \
-    auto s_ = status_;                                                \
-    if (s_ != cudaSuccess) {                                          \
-      std::cerr << __FILE__ << ", " << __LINE__ << ", " << s_ << ", " \
-                << cudaGetErrorString(s_) << std::endl;               \
-    }                                                                 \
+#define CUASSERT(status_)                                                                       \
+  {                                                                                             \
+    auto s_ = status_;                                                                          \
+    if (s_ != cudaSuccess) {                                                                    \
+      std::cerr << __FILE__ << ", " << __LINE__ << ", " << s_ << ", " << cudaGetErrorString(s_) \
+                << std::endl;                                                                   \
+    }                                                                                           \
   }
 
 #define CUBLASASSERT(status_)                                               \
@@ -41,11 +41,10 @@ enum pluginStatus_t {
       std::cerr << __FILE__ << ", " << __LINE__ << ", " << s_ << std::endl; \
     }                                                                       \
   }
-#define CUERRORMSG(status_)                                                 \
-  {                                                                         \
-    auto s_ = status_;                                                      \
-    if (s_ != 0)                                                            \
-      std::cerr << __FILE__ << ", " << __LINE__ << ", " << s_ << std::endl; \
+#define CUERRORMSG(status_)                                                            \
+  {                                                                                    \
+    auto s_ = status_;                                                                 \
+    if (s_ != 0) std::cerr << __FILE__ << ", " << __LINE__ << ", " << s_ << std::endl; \
   }
 
 #ifndef DEBUG
@@ -95,23 +94,21 @@ enum pluginStatus_t {
     }                                                                     \
   } while (0)
 
-#define CSC(call, err)                                   \
-  do {                                                   \
-    cudaError_t cudaStatus = call;                       \
-    if (cudaStatus != cudaSuccess) {                     \
-      printf("%s %d CUDA FAIL %s\n", __FILE__, __LINE__, \
-             cudaGetErrorString(cudaStatus));            \
-      return err;                                        \
-    }                                                    \
+#define CSC(call, err)                                                                    \
+  do {                                                                                    \
+    cudaError_t cudaStatus = call;                                                        \
+    if (cudaStatus != cudaSuccess) {                                                      \
+      printf("%s %d CUDA FAIL %s\n", __FILE__, __LINE__, cudaGetErrorString(cudaStatus)); \
+      return err;                                                                         \
+    }                                                                                     \
   } while (0)
 
-#define CHECK(status)                                          \
-  {                                                            \
-    if (status != 0) {                                         \
-      DEBUG_PRINTF("%s %d CUDA FAIL %s\n", __FILE__, __LINE__, \
-                   cudaGetErrorString(status));                \
-      abort();                                                 \
-    }                                                          \
+#define CHECK(status)                                                                       \
+  {                                                                                         \
+    if (status != 0) {                                                                      \
+      DEBUG_PRINTF("%s %d CUDA FAIL %s\n", __FILE__, __LINE__, cudaGetErrorString(status)); \
+      abort();                                                                              \
+    }                                                                                       \
   }
 
 #define DEBUG_PRINTF(...) \
@@ -121,17 +118,20 @@ enum pluginStatus_t {
 
 #endif
 
-namespace trt_plugin {
+namespace trt_plugin
+{
 
 constexpr int MAXTENSORDIMS = 10;
 
-struct TensorDesc {
+struct TensorDesc
+{
   int shape[MAXTENSORDIMS];
   int stride[MAXTENSORDIMS];
   int dim;
 };  // struct TensorDesc
 
-inline unsigned int getElementSize(nvinfer1::DataType t) {
+inline unsigned int getElementSize(nvinfer1::DataType t)
+{
   switch (t) {
     case nvinfer1::DataType::kINT32:
       return 4;
@@ -148,9 +148,9 @@ inline unsigned int getElementSize(nvinfer1::DataType t) {
   return 0;
 }
 
-inline size_t getAlignedSize(size_t origin_size, size_t aligned_number = 16) {
-  return size_t((origin_size + aligned_number - 1) / aligned_number) *
-         aligned_number;
+inline size_t getAlignedSize(size_t origin_size, size_t aligned_number = 16)
+{
+  return size_t((origin_size + aligned_number - 1) / aligned_number) * aligned_number;
 }
 
 }  // namespace trt_plugin
