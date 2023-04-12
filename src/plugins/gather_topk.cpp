@@ -23,8 +23,7 @@ GatherTopk::GatherTopk(const std::string & name) : TRTPluginBase(name)
 {
 }
 
-GatherTopk::GatherTopk(const std::string name, const void * data, size_t length)
-: TRTPluginBase(name)
+GatherTopk::GatherTopk(const std::string name, const void *, size_t) : TRTPluginBase(name)
 {
 }
 
@@ -37,8 +36,7 @@ nvinfer1::IPluginV2DynamicExt * GatherTopk::clone() const TRT_NOEXCEPT
 }
 
 nvinfer1::DimsExprs GatherTopk::getOutputDimensions(
-  int outputIndex, const nvinfer1::DimsExprs * inputs, int nbInputs,
-  nvinfer1::IExprBuilder & exprBuilder) TRT_NOEXCEPT
+  int, const nvinfer1::DimsExprs * inputs, int, nvinfer1::IExprBuilder &) TRT_NOEXCEPT
 {
   assert(inputs[0].nbDims >= inputs[1].nbDims);
   nvinfer1::DimsExprs ret;
@@ -53,7 +51,7 @@ nvinfer1::DimsExprs GatherTopk::getOutputDimensions(
 }
 
 bool GatherTopk::supportsFormatCombination(
-  int pos, const nvinfer1::PluginTensorDesc * ioDesc, int nbInputs, int nbOutputs) TRT_NOEXCEPT
+  int pos, const nvinfer1::PluginTensorDesc * ioDesc, int, int) TRT_NOEXCEPT
 {
   switch (pos) {
     case 0:
@@ -76,22 +74,21 @@ bool GatherTopk::supportsFormatCombination(
 }
 
 void GatherTopk::configurePlugin(
-  const nvinfer1::DynamicPluginTensorDesc * inputs, int nbInputs,
-  const nvinfer1::DynamicPluginTensorDesc * outputs, int nbOutputs) TRT_NOEXCEPT
+  const nvinfer1::DynamicPluginTensorDesc *, int, const nvinfer1::DynamicPluginTensorDesc *,
+  int) TRT_NOEXCEPT
 {
 }
 
 size_t GatherTopk::getWorkspaceSize(
-  const nvinfer1::PluginTensorDesc * inputs, int nbInputs,
-  const nvinfer1::PluginTensorDesc * outputs, int nbOutputs) const TRT_NOEXCEPT
+  const nvinfer1::PluginTensorDesc *, int, const nvinfer1::PluginTensorDesc *,
+  int) const TRT_NOEXCEPT
 {
   return 0;
 }
 
 int GatherTopk::enqueue(
-  const nvinfer1::PluginTensorDesc * inputDesc, const nvinfer1::PluginTensorDesc * outputDesc,
-  const void * const * inputs, void * const * outputs, void * workSpace,
-  cudaStream_t stream) TRT_NOEXCEPT
+  const nvinfer1::PluginTensorDesc * inputDesc, const nvinfer1::PluginTensorDesc *,
+  const void * const * inputs, void * const * outputs, void *, cudaStream_t stream) TRT_NOEXCEPT
 {
   const int * dims = &(inputDesc[0].dims.d[0]);
   const int * indices_dims = &(inputDesc[1].dims.d[0]);
@@ -124,7 +121,7 @@ int GatherTopk::enqueue(
 }
 
 nvinfer1::DataType GatherTopk::getOutputDataType(
-  int index, const nvinfer1::DataType * inputTypes, int nbInputs) const TRT_NOEXCEPT
+  int, const nvinfer1::DataType * inputTypes, int) const TRT_NOEXCEPT
 {
   return inputTypes[0];
 }
@@ -150,7 +147,7 @@ size_t GatherTopk::getSerializationSize() const TRT_NOEXCEPT
   return 0;
 }
 
-void GatherTopk::serialize(void * buffer) const TRT_NOEXCEPT
+void GatherTopk::serialize(void *) const TRT_NOEXCEPT
 {
 }
 
@@ -172,7 +169,7 @@ const char * GatherTopkCreator::getPluginVersion() const TRT_NOEXCEPT
 }
 
 nvinfer1::IPluginV2 * GatherTopkCreator::createPlugin(
-  const char * name, const nvinfer1::PluginFieldCollection * fc) TRT_NOEXCEPT
+  const char * name, const nvinfer1::PluginFieldCollection *) TRT_NOEXCEPT
 {
   auto * plugin = new GatherTopk(name);
   plugin->setPluginNamespace(getPluginNamespace());
