@@ -7,7 +7,7 @@
     "editor.defaultFormatter": "ms-vscode.cpptools"
   },
   // formmatter for cmake
-  "cmakeFormat.exePath": "$HOME/.local/bin/cmake-format",
+  // "cmakeFormat.exePath": "$HOME/.local/bin/cmake-format",
   "ros.distro": "humble",
   "python.autoComplete.extraPaths": [
     "/opt/ros/humble/lib/python3.10/site-packages",
