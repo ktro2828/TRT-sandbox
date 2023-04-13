@@ -1,4 +1,18 @@
-// Copyright (c) OpenMMLab. All rights reserved
+// Copyright 2023 Tier IV, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Copyright (c) OpenMMLab. All rights reserved.
 
 #include "plugins/grid_priors.hpp"
 
@@ -7,11 +21,7 @@
 
 #include <assert.h>
 
-#include <chrono>
-
-using namespace nvinfer1;
-
-namespace trt_plugin
+namespace ssd
 {
 namespace
 {
@@ -19,36 +29,85 @@ static const char * PLUGIN_VERSION{"1"};
 static const char * PLUGIN_NAME{"GridPriorsTRT"};
 }  // namespace
 
-GridPriorsTRT::GridPriorsTRT(const std::string & name, const nvinfer1::Dims stride)
-: TRTPluginBase(name), mStride(stride)
+GridPriors::GridPriors(const std::string & name, const nvinfer1::Dims & stride)
+: mLayerName(name), mStride(stride)
 {
 }
 
-GridPriorsTRT::GridPriorsTRT(const std::string name, const void * data, size_t length)
-: TRTPluginBase(name)
+GridPriors::GridPriors(const std::string & name, const void * data, size_t length)
+: mLayerName(name)
 {
   deserialize_value(&data, &length, &mStride);
 }
-GridPriorsTRT::~GridPriorsTRT()
+
+// IPluginV2 methods
+const char * GridPriors::getPluginVersion() const noexcept
+{
+  return PLUGIN_VERSION;
+}
+
+const char * GridPriors::getPluginType() const noexcept
+{
+  return PLUGIN_NAME;
+}
+
+int GridPriors::initialize() noexcept
+{
+  return STATUS_SUCCESS;
+}
+
+void GridPriors::terminate() noexcept
 {
 }
 
-nvinfer1::IPluginV2DynamicExt * GridPriorsTRT::clone() const TRT_NOEXCEPT
+void GridPriors::destroy() noexcept
 {
-  GridPriorsTRT * plugin = new GridPriorsTRT(mLayerName, mStride);
-  plugin->setPluginNamespace(getPluginNamespace());
+  delete this;
+}
 
+void GridPriors::setPluginNamespace(const char * pluginNamespace) noexcept
+{
+  mNamespace = pluginNamespace;
+}
+
+const char * GridPriors::getPluginNamespace() const noexcept
+{
+  return mNamespace.c_str();
+}
+
+int GridPriors::getNbOutputs() const noexcept
+{
+  return 1;
+}
+
+size_t GridPriors::getSerializationSize() const noexcept
+{
+  return serialized_size(mStride);
+}
+
+void GridPriors::serialize(void * buffer) const noexcept
+{
+  serialize_value(&buffer, mStride);
+}
+
+// IPluginV2Ext methods
+nvinfer1::DataType GridPriors::getOutputDataType(
+  int, const nvinfer1::DataType * inputTypes, int) const noexcept
+{
+  return inputTypes[0];
+}
+
+// IPluginV2DynamicExt methods
+nvinfer1::IPluginV2DynamicExt * GridPriors::clone() const noexcept
+{
+  GridPriors * plugin = new GridPriors(mLayerName, mStride);
+  plugin->setPluginNamespace(getPluginNamespace());
   return plugin;
 }
 
-nvinfer1::DimsExprs GridPriorsTRT::getOutputDimensions(
-  int outputIndex, const nvinfer1::DimsExprs * inputs, int nbInputs,
-  nvinfer1::IExprBuilder & exprBuilder) TRT_NOEXCEPT
+nvinfer1::DimsExprs GridPriors::getOutputDimensions(
+  int, const nvinfer1::DimsExprs * inputs, int, nvinfer1::IExprBuilder & exprBuilder) noexcept
 {
-  // input[0] == base_anchor
-  // input[1] == empty_h
-  // input[2] == empty_w
-
   nvinfer1::DimsExprs ret;
   ret.nbDims = 2;
   auto area =
@@ -59,24 +118,35 @@ nvinfer1::DimsExprs GridPriorsTRT::getOutputDimensions(
   return ret;
 }
 
-bool GridPriorsTRT::supportsFormatCombination(
-  int pos, const nvinfer1::PluginTensorDesc * ioDesc, int nbInputs, int nbOutputs) TRT_NOEXCEPT
+bool GridPriors::supportsFormatCombination(
+  int pos, const nvinfer1::PluginTensorDesc * ioDesc, int nbInputs, int) noexcept
 {
   if (pos == 0) {
     return (
       ioDesc[pos].type == nvinfer1::DataType::kFLOAT &&
       ioDesc[pos].format == nvinfer1::TensorFormat::kLINEAR);
-  } else if (pos - nbInputs == 0) {
+  } else if (pos == nbInputs) {
     return ioDesc[pos].type == ioDesc[0].type && ioDesc[pos].format == ioDesc[0].format;
   } else {
     return true;
   }
 }
 
-int GridPriorsTRT::enqueue(
-  const nvinfer1::PluginTensorDesc * inputDesc, const nvinfer1::PluginTensorDesc * outputDesc,
-  const void * const * inputs, void * const * outputs, void * workSpace,
-  cudaStream_t stream) TRT_NOEXCEPT
+void GridPriors::configurePlugin(
+  const nvinfer1::DynamicPluginTensorDesc *, int, const nvinfer1::DynamicPluginTensorDesc *,
+  int) noexcept
+{
+}
+
+size_t GridPriors::getWorkspaceSize(
+  const nvinfer1::PluginTensorDesc *, int, const nvinfer1::PluginTensorDesc *, int) const noexcept
+{
+  return 0;
+}
+
+int GridPriors::enqueue(
+  const nvinfer1::PluginTensorDesc * inputDesc, const nvinfer1::PluginTensorDesc *,
+  const void * const * inputs, void * const * outputs, void *, cudaStream_t stream) noexcept
 {
   int num_base_anchors = inputDesc[0].dims.d[0];
   int feat_h = inputDesc[1].dims.d[0];
@@ -88,53 +158,18 @@ int GridPriorsTRT::enqueue(
   auto data_type = inputDesc[0].type;
   switch (data_type) {
     case nvinfer1::DataType::kFLOAT:
-      trt_grid_priors_impl<float>(
-        (float *)base_anchor, (float *)output, num_base_anchors, feat_w, feat_h, mStride.d[0],
-        mStride.d[1], stream);
+      grid_priors_impl<float>(
+        reinterpret_cast<const float *>(base_anchor), reinterpret_cast<float *>(output),
+        num_base_anchors, feat_w, feat_h, mStride.d[0], mStride.d[1], stream);
       break;
     default:
       return 1;
   }
-
   return 0;
 }
 
-nvinfer1::DataType GridPriorsTRT::getOutputDataType(
-  int index, const nvinfer1::DataType * inputTypes, int nbInputs) const TRT_NOEXCEPT
-{
-  return inputTypes[0];
-}
-
-// IPluginV2 Methods
-const char * GridPriorsTRT::getPluginType() const TRT_NOEXCEPT
-{
-  return PLUGIN_NAME;
-}
-
-const char * GridPriorsTRT::getPluginVersion() const TRT_NOEXCEPT
-{
-  return PLUGIN_VERSION;
-}
-
-int GridPriorsTRT::getNbOutputs() const TRT_NOEXCEPT
-{
-  return 1;
-}
-
-size_t GridPriorsTRT::getSerializationSize() const TRT_NOEXCEPT
-{
-  return serialized_size(mStride);
-}
-
-void GridPriorsTRT::serialize(void * buffer) const TRT_NOEXCEPT
-{
-  serialize_value(&buffer, mStride);
-  ;
-}
-
-////////////////////// creator /////////////////////////////
-
-GridPriorsTRTCreator::GridPriorsTRTCreator()
+// PluginCreator
+GridPriorsCreator::GridPriorsCreator()
 {
   mPluginAttributes.clear();
   mPluginAttributes.emplace_back(nvinfer1::PluginField("stride_h"));
@@ -143,23 +178,38 @@ GridPriorsTRTCreator::GridPriorsTRTCreator()
   mFC.fields = mPluginAttributes.data();
 }
 
-const char * GridPriorsTRTCreator::getPluginName() const TRT_NOEXCEPT
+const char * GridPriorsCreator::getPluginName() const noexcept
 {
   return PLUGIN_NAME;
 }
 
-const char * GridPriorsTRTCreator::getPluginVersion() const TRT_NOEXCEPT
+const char * GridPriorsCreator::getPluginVersion() const noexcept
 {
   return PLUGIN_VERSION;
 }
 
-nvinfer1::IPluginV2 * GridPriorsTRTCreator::createPlugin(
-  const char * name, const nvinfer1::PluginFieldCollection * fc) TRT_NOEXCEPT
+const nvinfer1::PluginFieldCollection * GridPriorsCreator::getFieldNames() noexcept
 {
-  int stride_w = 1;
-  int stride_h = 1;
+  return &mFC;
+}
 
-  for (int i = 0; i < fc->nbFields; i++) {
+void GridPriorsCreator::setPluginNamespace(const char * pluginNamespace) noexcept
+{
+  mNamespace = pluginNamespace;
+}
+
+const char * GridPriorsCreator::getPluginNamespace() const noexcept
+{
+  return mNamespace.c_str();
+}
+
+nvinfer1::IPluginV2 * GridPriorsCreator::createPlugin(
+  const char * name, const nvinfer1::PluginFieldCollection * fc) noexcept
+{
+  int stride_h = 1;
+  int stride_w = 1;
+
+  for (int i = 0; i < fc->nbFields; ++i) {
     if (fc->fields[i].data == nullptr) {
       continue;
     }
@@ -174,17 +224,18 @@ nvinfer1::IPluginV2 * GridPriorsTRTCreator::createPlugin(
   }
   nvinfer1::Dims stride{2, {stride_w, stride_h}};
 
-  GridPriorsTRT * plugin = new GridPriorsTRT(name, stride);
+  GridPriors * plugin = new GridPriors(name, stride);
   plugin->setPluginNamespace(getPluginNamespace());
   return plugin;
 }
 
-nvinfer1::IPluginV2 * GridPriorsTRTCreator::deserializePlugin(
-  const char * name, const void * serialData, size_t serialLength) TRT_NOEXCEPT
+nvinfer1::IPluginV2 * GridPriorsCreator::deserializePlugin(
+  const char * name, const void * serialData, size_t serialLength) noexcept
 {
-  auto plugin = new GridPriorsTRT(name, serialData, serialLength);
+  auto plugin = new GridPriors(name, serialData, serialLength);
   plugin->setPluginNamespace(getPluginNamespace());
   return plugin;
 }
-REGISTER_TENSORRT_PLUGIN(GridPriorsTRTCreator);
-}  // namespace trt_plugin
+
+REGISTER_TENSORRT_PLUGIN(GridPriorsCreator);
+}  // namespace ssd

@@ -1,3 +1,17 @@
+// Copyright 2023 Tier IV, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Copyright (c) OpenMMLab. All rights reserved.
 
 #include "plugins/gather_topk.hpp"
@@ -5,13 +19,12 @@
 #include "plugins/gather_topk_kernel.hpp"
 #include "plugins/trt_serialize.hpp"
 
-#include <NvInferVersion.h>
 #include <assert.h>
 #include <stdio.h>
 
 #include <chrono>
 
-namespace trt_plugin
+namespace ssd
 {
 namespace
 {
@@ -19,26 +32,81 @@ static const char * PLUGIN_VERSION{"1"};
 static const char * PLUGIN_NAME{"GatherTopk"};
 }  // namespace
 
-GatherTopk::GatherTopk(const std::string & name) : TRTPluginBase(name)
+GatherTopk::GatherTopk(const std::string & name) : mLayerName(name)
+{
+}
+GatherTopk::GatherTopk(const std::string & name, const void *, size_t) : mLayerName(name)
 {
 }
 
-GatherTopk::GatherTopk(const std::string name, const void *, size_t) : TRTPluginBase(name)
+// IPluginV2 methods
+const char * GatherTopk::getPluginVersion() const noexcept
+{
+  return PLUGIN_VERSION;
+}
+
+const char * GatherTopk::getPluginType() const noexcept
+{
+  return PLUGIN_NAME;
+}
+
+int GatherTopk::initialize() noexcept
+{
+  return STATUS_SUCCESS;
+}
+
+void GatherTopk::terminate() noexcept
 {
 }
 
-nvinfer1::IPluginV2DynamicExt * GatherTopk::clone() const TRT_NOEXCEPT
+void GatherTopk::destroy() noexcept
+{
+  delete this;
+}
+
+void GatherTopk::setPluginNamespace(const char * pluginNamespace) noexcept
+{
+  mNamespace = pluginNamespace;
+}
+
+const char * GatherTopk::getPluginNamespace() const noexcept
+{
+  return mNamespace.c_str();
+}
+
+int GatherTopk::getNbOutputs() const noexcept
+{
+  return 1;
+}
+
+size_t GatherTopk::getSerializationSize() const noexcept
+{
+  return 0;
+}
+
+void GatherTopk::serialize(void *) const noexcept
+{
+}
+
+// IPluginV2Ext methods
+nvinfer1::DataType GatherTopk::getOutputDataType(
+  int, const nvinfer1::DataType * inputTypes, int) const noexcept
+{
+  return inputTypes[0];
+}
+
+// IPluginV2DynamicExt methods
+nvinfer1::IPluginV2DynamicExt * GatherTopk::clone() const noexcept
 {
   GatherTopk * plugin = new GatherTopk(mLayerName);
   plugin->setPluginNamespace(getPluginNamespace());
-
   return plugin;
 }
 
 nvinfer1::DimsExprs GatherTopk::getOutputDimensions(
-  int, const nvinfer1::DimsExprs * inputs, int, nvinfer1::IExprBuilder &) TRT_NOEXCEPT
+  int, const nvinfer1::DimsExprs * inputs, int, nvinfer1::IExprBuilder &) noexcept
 {
-  assert(inputs[0].nbDims >= inputs[1].nbDims);
+  assert(inputs[1].nbDims <= inputs[0].nbDims);
   nvinfer1::DimsExprs ret;
   ret.nbDims = inputs[0].nbDims;
   for (int i = 0; i < inputs[1].nbDims; ++i) {
@@ -51,7 +119,7 @@ nvinfer1::DimsExprs GatherTopk::getOutputDimensions(
 }
 
 bool GatherTopk::supportsFormatCombination(
-  int pos, const nvinfer1::PluginTensorDesc * ioDesc, int, int) TRT_NOEXCEPT
+  int pos, const nvinfer1::PluginTensorDesc * ioDesc, int, int) noexcept
 {
   switch (pos) {
     case 0:
@@ -70,30 +138,28 @@ bool GatherTopk::supportsFormatCombination(
     default:
       return true;
   }
-  return true;
 }
 
 void GatherTopk::configurePlugin(
   const nvinfer1::DynamicPluginTensorDesc *, int, const nvinfer1::DynamicPluginTensorDesc *,
-  int) TRT_NOEXCEPT
+  int) noexcept
 {
 }
 
 size_t GatherTopk::getWorkspaceSize(
-  const nvinfer1::PluginTensorDesc *, int, const nvinfer1::PluginTensorDesc *,
-  int) const TRT_NOEXCEPT
+  const nvinfer1::PluginTensorDesc *, int, const nvinfer1::PluginTensorDesc *, int) const noexcept
 {
   return 0;
 }
 
 int GatherTopk::enqueue(
   const nvinfer1::PluginTensorDesc * inputDesc, const nvinfer1::PluginTensorDesc *,
-  const void * const * inputs, void * const * outputs, void *, cudaStream_t stream) TRT_NOEXCEPT
+  const void * const * inputs, void * const * outputs, void *, cudaStream_t stream) noexcept
 {
   const int * dims = &(inputDesc[0].dims.d[0]);
-  const int * indices_dims = &(inputDesc[1].dims.d[0]);
+  const int * dims_indices = &(inputDesc[1].dims.d[0]);
   int nbDims = inputDesc[0].dims.nbDims;
-  int indice_nbDims = inputDesc[1].dims.nbDims;
+  int nbDims_index = inputDesc[1].dims.nbDims;
 
   const void * data = inputs[0];
   const void * indices = inputs[1];
@@ -104,53 +170,21 @@ int GatherTopk::enqueue(
   switch (data_type) {
     case nvinfer1::DataType::kFLOAT:
       gather_topk_impl<float>(
-        (float *)data, (int *)indices, dims, nbDims, indices_dims, indice_nbDims, (float *)output,
-        stream);
+        reinterpret_cast<const float *>(data), reinterpret_cast<const int *>(indices), dims, nbDims,
+        dims_indices, nbDims_index, reinterpret_cast<float *>(output), stream);
       break;
-
     case nvinfer1::DataType::kINT32:
       gather_topk_impl<int>(
-        (int *)data, (int *)indices, dims, nbDims, indices_dims, indice_nbDims, (int *)output,
-        stream);
+        reinterpret_cast<const int *>(data), reinterpret_cast<const int *>(indices), dims, nbDims,
+        dims_indices, nbDims_index, reinterpret_cast<int *>(output), stream);
       break;
     default:
       break;
   }
-
   return 0;
 }
 
-nvinfer1::DataType GatherTopk::getOutputDataType(
-  int, const nvinfer1::DataType * inputTypes, int) const TRT_NOEXCEPT
-{
-  return inputTypes[0];
-}
-
-// IPluginV2 Methods
-const char * GatherTopk::getPluginType() const TRT_NOEXCEPT
-{
-  return PLUGIN_NAME;
-}
-
-const char * GatherTopk::getPluginVersion() const TRT_NOEXCEPT
-{
-  return PLUGIN_VERSION;
-}
-
-int GatherTopk::getNbOutputs() const TRT_NOEXCEPT
-{
-  return 1;
-}
-
-size_t GatherTopk::getSerializationSize() const TRT_NOEXCEPT
-{
-  return 0;
-}
-
-void GatherTopk::serialize(void *) const TRT_NOEXCEPT
-{
-}
-
+// PluginCreator
 GatherTopkCreator::GatherTopkCreator()
 {
   mPluginAttributes.clear();
@@ -158,18 +192,33 @@ GatherTopkCreator::GatherTopkCreator()
   mFC.fields = mPluginAttributes.data();
 }
 
-const char * GatherTopkCreator::getPluginName() const TRT_NOEXCEPT
+const char * GatherTopkCreator::getPluginName() const noexcept
 {
   return PLUGIN_NAME;
 }
 
-const char * GatherTopkCreator::getPluginVersion() const TRT_NOEXCEPT
+const char * GatherTopkCreator::getPluginVersion() const noexcept
 {
   return PLUGIN_VERSION;
 }
 
+const nvinfer1::PluginFieldCollection * GatherTopkCreator::getFieldNames() noexcept
+{
+  return &mFC;
+}
+
+void GatherTopkCreator::setPluginNamespace(const char * pluginNamespace) noexcept
+{
+  mNamespace = pluginNamespace;
+}
+
+const char * GatherTopkCreator::getPluginNamespace() const noexcept
+{
+  return mNamespace.c_str();
+}
+
 nvinfer1::IPluginV2 * GatherTopkCreator::createPlugin(
-  const char * name, const nvinfer1::PluginFieldCollection *) TRT_NOEXCEPT
+  const char * name, const nvinfer1::PluginFieldCollection *) noexcept
 {
   auto * plugin = new GatherTopk(name);
   plugin->setPluginNamespace(getPluginNamespace());
@@ -177,7 +226,7 @@ nvinfer1::IPluginV2 * GatherTopkCreator::createPlugin(
 }
 
 nvinfer1::IPluginV2 * GatherTopkCreator::deserializePlugin(
-  const char * name, const void * serialData, size_t serialLength) TRT_NOEXCEPT
+  const char * name, const void * serialData, size_t serialLength) noexcept
 {
   auto plugin = new GatherTopk(name, serialData, serialLength);
   plugin->setPluginNamespace(getPluginNamespace());
@@ -185,4 +234,4 @@ nvinfer1::IPluginV2 * GatherTopkCreator::deserializePlugin(
 }
 
 REGISTER_TENSORRT_PLUGIN(GatherTopkCreator);
-}  // namespace trt_plugin
+}  // namespace ssd

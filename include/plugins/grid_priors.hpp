@@ -1,71 +1,101 @@
-// Copyright (c) OpenMMLab. All rights reserved.
-#ifndef TRT_GRID_PRIORS_HPP
-#define TRT_GRID_PRIORS_HPP
-#include "plugins/trt_plugin_base.hpp"
+// Copyright 2023 Tier IV, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
+// Copyright (c) OpenMMLab. All rights reserved.
+
+#ifndef GRID_PRIORS_HPP_
+#define GRID_PRIORS_HPP_
+
+#include "trt_plugin_helper.hpp"
+
+#include <NvInferRuntime.h>
+#include <NvInferVersion.h>
 #include <cublas_v2.h>
 
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace trt_plugin
+namespace ssd
 {
-class GridPriorsTRT : public TRTPluginBase
+class GridPriors : public nvinfer1::IPluginV2DynamicExt
 {
+private:
+  const std::string mLayerName;
+  std::string mNamespace;
+  nvinfer1::Dims mStride;
+  cublasHandle_t m_cublas_handle;
+
 public:
-  GridPriorsTRT(const std::string & name, const nvinfer1::Dims stride);
+  explicit GridPriors(const std::string & name, const nvinfer1::Dims & stride);
+  GridPriors(const std::string & name, const void *, size_t length);
+  GridPriors() = delete;
 
-  GridPriorsTRT(const std::string name, const void * data, size_t length);
+  // IPluginV2 methods
+  const char * getPluginVersion() const noexcept override;
+  const char * getPluginType() const noexcept override;
+  int initialize() noexcept override;
+  void terminate() noexcept override;
+  void destroy() noexcept override;
+  void setPluginNamespace(const char * pluginNamespace) noexcept override;
+  const char * getPluginNamespace() const noexcept override;
+  int getNbOutputs() const noexcept override;
+  size_t getSerializationSize() const noexcept override;
+  void serialize(void * buffer) const noexcept override;
 
-  GridPriorsTRT() = delete;
+  // IPluginV2Ext methods
+  nvinfer1::DataType getOutputDataType(
+    int index, const nvinfer1::DataType * inputTypes, int nbInputs) const noexcept override;
 
-  ~GridPriorsTRT() TRT_NOEXCEPT override;
-
-  // IPluginV2DynamicExt Methods
-  nvinfer1::IPluginV2DynamicExt * clone() const TRT_NOEXCEPT override;
+  // IPluginV2DynamicExt methods
+  nvinfer1::IPluginV2DynamicExt * clone() const noexcept override;
   nvinfer1::DimsExprs getOutputDimensions(
     int outputIndex, const nvinfer1::DimsExprs * inputs, int nbInputs,
-    nvinfer1::IExprBuilder & exprBuilder) TRT_NOEXCEPT override;
+    nvinfer1::IExprBuilder & exprBuilder) noexcept override;
   bool supportsFormatCombination(
     int pos, const nvinfer1::PluginTensorDesc * ioDesc, int nbInputs,
-    int nbOutputs) TRT_NOEXCEPT override;
+    int nbOutputs) noexcept override;
+  void configurePlugin(
+    const nvinfer1::DynamicPluginTensorDesc * inputs, int nbInputs,
+    const nvinfer1::DynamicPluginTensorDesc * outputs, int nbOutputs) noexcept override;
+  size_t getWorkspaceSize(
+    const nvinfer1::PluginTensorDesc *, int, const nvinfer1::PluginTensorDesc *,
+    int) const noexcept override;
   int enqueue(
-    const nvinfer1::PluginTensorDesc * inputDesc, const nvinfer1::PluginTensorDesc * outputDesc,
-    const void * const * inputs, void * const * outputs, void * workspace,
-    cudaStream_t stream) TRT_NOEXCEPT override;
+    const nvinfer1::PluginTensorDesc *, const nvinfer1::PluginTensorDesc *, const void * const *,
+    void * const *, void *, cudaStream_t) noexcept override;
+};  // class GridPriors
 
-  // IPluginV2Ext Methods
-  nvinfer1::DataType getOutputDataType(
-    int index, const nvinfer1::DataType * inputTypes, int nbInputs) const TRT_NOEXCEPT override;
-
-  // IPluginV2 Methods
-  const char * getPluginType() const TRT_NOEXCEPT override;
-  const char * getPluginVersion() const TRT_NOEXCEPT override;
-  int getNbOutputs() const TRT_NOEXCEPT override;
-  size_t getSerializationSize() const TRT_NOEXCEPT override;
-  void serialize(void * buffer) const TRT_NOEXCEPT override;
-
-private:
-  nvinfer1::Dims mStride;
-
-  cublasHandle_t m_cublas_handle;
-};
-
-class GridPriorsTRTCreator : public TRTPluginCreatorBase
+class GridPriorsCreator : public nvinfer1::IPluginCreator
 {
+private:
+  nvinfer1::PluginFieldCollection mFC;
+  std::vector<nvinfer1::PluginField> mPluginAttributes;
+  std::string mNamespace;
+
 public:
-  GridPriorsTRTCreator();
-
-  const char * getPluginName() const TRT_NOEXCEPT override;
-
-  const char * getPluginVersion() const TRT_NOEXCEPT override;
-
-  nvinfer1::IPluginV2 * createPlugin(const char * name, const nvinfer1::PluginFieldCollection * fc)
-    TRT_NOEXCEPT override;
-
+  GridPriorsCreator();
+  const char * getPluginVersion() const noexcept override;
+  const nvinfer1::PluginFieldCollection * getFieldNames() noexcept override;
+  void setPluginNamespace(const char * pluginNamespace) noexcept override;
+  const char * getPluginNamespace() const noexcept override;
+  const char * getPluginName() const noexcept override;
+  nvinfer1::IPluginV2 * createPlugin(
+    const char * name, const nvinfer1::PluginFieldCollection * fc) noexcept override;
   nvinfer1::IPluginV2 * deserializePlugin(
-    const char * name, const void * serialData, size_t serialLength) TRT_NOEXCEPT override;
-};
-}  // namespace trt_plugin
-#endif  // TRT_GRID_PRIORS_HPP
+    const char * name, const void * serialData, size_t serialLength) noexcept override;
+};  // class GridPriorsCreator
+}  // namespace ssd
+
+#endif  // GRID_PRIORS_HPP_
