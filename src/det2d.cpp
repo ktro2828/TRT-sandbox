@@ -30,6 +30,11 @@ struct Config
   Shape shape{300, 300, 3};
 };  // struct config
 
+std::vector<float> calculateSoftmax(const float * scores)
+{
+  // TODO
+}
+
 cv::Mat drawOutput(
   const cv::Mat & img, const float * scores, const float * boxes, const Config & config)
 {
@@ -41,16 +46,17 @@ cv::Mat drawOutput(
     if (scores[i] < config.threshold) {
       std::cerr << "[WARN] No boxes are detected!! Score: " << scores[i] << " < "
                 << config.threshold << std::endl;
-      break;
+      continue;
     }
-    float x_offset = boxes[4 * i] * img_w;
-    float y_offset = boxes[4 * i + 1] * img_h;
-    float width = boxes[4 * i + 2] * img_w;
-    float height = boxes[4 * i + 3] * img_h;
+    float x_offset = boxes[4 * i] * img_w / config.shape.width;
+    float y_offset = boxes[4 * i + 1] * img_h / config.shape.height;
+    float width = boxes[4 * i + 2] * img_w / config.shape.width;
+    float height = boxes[4 * i + 3] * img_h / config.shape.height;
     const int x1 = std::max(0, static_cast<int>(x_offset));
     const int y1 = std::max(0, static_cast<int>(y_offset));
     const int x2 = std::min(img_w, static_cast<int>(x_offset + width));
     const int y2 = std::min(img_h, static_cast<int>(y_offset + height));
+    std::cout << "(" << x1 << ", " << y1 << "), (" << x2 << ", " << y2 << ")" << std::endl;
     cv::rectangle(viz, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 255), 3, 8, 0);
   }
 

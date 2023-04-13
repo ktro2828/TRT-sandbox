@@ -194,9 +194,9 @@ void Model::infer(std::vector<void *> & buffers, const int batch_size)
     throw std::runtime_error("Fail to create context.");
   }
 
-  auto input_dims = engine_->getBindingDimensions(0);
+  std::vector<int> input_dims = getInputDims();
   context_->setBindingDimensions(
-    0, nvinfer1::Dims4(batch_size, input_dims.d[1], input_dims.d[2], input_dims.d[3]));
+    0, nvinfer1::Dims4(batch_size, input_dims.at(0), input_dims.at(1), input_dims.at(2)));
   context_->enqueueV2(buffers.data(), stream_, nullptr);
   cudaStreamSynchronize(stream_);
 }
@@ -205,7 +205,6 @@ bool Model::detect(const cv::Mat & img, float * out_scores, float * out_boxes)
 {
   const auto input_dims = getInputDims();
   const auto input = preprocess(img);
-  // BUG: cudaErrorInvalidValue (1)@: ... invalid argument
   CHECK_CUDA_ERROR(
     cudaMemcpy(input_d_.get(), input.data(), input.size() * sizeof(float), cudaMemcpyHostToDevice));
   // Should be changed depending on input(s)/output(s) order
