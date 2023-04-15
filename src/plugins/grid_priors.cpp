@@ -184,5 +184,4 @@ nvinfer1::IPluginV2 * GridPriorsCreator::deserializePlugin(
   return plugin;
 }
 
-REGISTER_TENSORRT_PLUGIN(GridPriorsCreator);
 }  // namespace trt_plugin

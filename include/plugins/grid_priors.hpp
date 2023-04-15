@@ -68,6 +68,8 @@ public:
   nvinfer1::IPluginV2 * deserializePlugin(
     const char * name, const void * serialData, size_t serialLength) noexcept override;
 };  // class GridPriorsCreator
+
+REGISTER_TENSORRT_PLUGIN(GridPriorsCreator);
 }  // namespace trt_plugin
 
 #endif  // GRID_PRIORS_HPP_

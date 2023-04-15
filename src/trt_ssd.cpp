@@ -1,5 +1,8 @@
 #include "trt_ssd.hpp"
 
+#include "plugins/gather_topk.hpp"
+#include "plugins/grid_priors.hpp"
+
 #include <NvInferPlugin.h>
 #include <NvOnnxParser.h>
 

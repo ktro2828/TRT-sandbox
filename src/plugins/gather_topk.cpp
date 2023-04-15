@@ -180,5 +180,4 @@ nvinfer1::IPluginV2 * GatherTopkCreator::deserializePlugin(
   return plugin;
 }
 
-REGISTER_TENSORRT_PLUGIN(GatherTopkCreator);
 }  // namespace trt_plugin

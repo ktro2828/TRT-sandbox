@@ -78,10 +78,6 @@ int main(int argc, char * argv[])
   const std::string precision{"FP32"};
   const bool verbose{false};
 
-  // Load plugins
-  loadLibrary("src/libgather_topk_plugin.so");
-  loadLibrary("src/libgrid_priors_plugin.so");
-
   std::string model_path(argv[2]);
   std::string engine_path, onnx_path;
   if (model_path.substr(model_path.find_last_of(".") + 1) == "engine") {
