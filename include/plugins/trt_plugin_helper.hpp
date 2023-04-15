@@ -21,7 +21,7 @@ enum pluginStatus_t {
 
 #define ASSERT(assertion)                                                     \
   {                                                                           \
-    if (!assertion) {                                                         \
+    if (!(assertion)) {                                                       \
       std::cerr << "#assertion" << __FILE__ << ", " << __LINE__ << std::endl; \
       abort();                                                                \
     }                                                                         \
