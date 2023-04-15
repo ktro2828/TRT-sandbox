@@ -1,23 +1,10 @@
-// Copyright 2023 Tier IV, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 // Copyright (c) OpenMMLab. All rights reserved.
 
 #ifndef GRID_PRIORS_HPP_
 #define GRID_PRIORS_HPP_
 
-#include "trt_plugin_helper.hpp"
+#include "plugins/plugin_base.hpp"
+#include "plugins/trt_plugin_helper.hpp"
 
 #include <NvInferRuntime.h>
 #include <NvInferVersion.h>
@@ -27,13 +14,11 @@
 #include <string>
 #include <vector>
 
-namespace ssd
+namespace trt_plugin
 {
-class GridPriors : public nvinfer1::IPluginV2DynamicExt
+class GridPriors : public TRTPluginBase
 {
 private:
-  const std::string mLayerName;
-  std::string mNamespace;
   nvinfer1::Dims mStride;
   cublasHandle_t m_cublas_handle;
 
@@ -45,11 +30,6 @@ public:
   // IPluginV2 methods
   const char * getPluginVersion() const noexcept override;
   const char * getPluginType() const noexcept override;
-  int initialize() noexcept override;
-  void terminate() noexcept override;
-  void destroy() noexcept override;
-  void setPluginNamespace(const char * pluginNamespace) noexcept override;
-  const char * getPluginNamespace() const noexcept override;
   int getNbOutputs() const noexcept override;
   size_t getSerializationSize() const noexcept override;
   void serialize(void * buffer) const noexcept override;
@@ -77,25 +57,17 @@ public:
     void * const *, void *, cudaStream_t) noexcept override;
 };  // class GridPriors
 
-class GridPriorsCreator : public nvinfer1::IPluginCreator
+class GridPriorsCreator : public TRTPluginCreatorBase
 {
-private:
-  nvinfer1::PluginFieldCollection mFC;
-  std::vector<nvinfer1::PluginField> mPluginAttributes;
-  std::string mNamespace;
-
 public:
   GridPriorsCreator();
   const char * getPluginVersion() const noexcept override;
-  const nvinfer1::PluginFieldCollection * getFieldNames() noexcept override;
-  void setPluginNamespace(const char * pluginNamespace) noexcept override;
-  const char * getPluginNamespace() const noexcept override;
   const char * getPluginName() const noexcept override;
   nvinfer1::IPluginV2 * createPlugin(
     const char * name, const nvinfer1::PluginFieldCollection * fc) noexcept override;
   nvinfer1::IPluginV2 * deserializePlugin(
     const char * name, const void * serialData, size_t serialLength) noexcept override;
 };  // class GridPriorsCreator
-}  // namespace ssd
+}  // namespace trt_plugin
 
 #endif  // GRID_PRIORS_HPP_

@@ -1,17 +1,3 @@
-// Copyright 2023 Tier IV, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 // Copyright (c) OpenMMLab. All rights reserved.
 
 #include "plugins/gather_topk.hpp"
@@ -24,7 +10,7 @@
 
 #include <chrono>
 
-namespace ssd
+namespace trt_plugin
 {
 namespace
 {
@@ -32,10 +18,10 @@ static const char * PLUGIN_VERSION{"1"};
 static const char * PLUGIN_NAME{"GatherTopk"};
 }  // namespace
 
-GatherTopk::GatherTopk(const std::string & name) : mLayerName(name)
+GatherTopk::GatherTopk(const std::string & name) : TRTPluginBase(name)
 {
 }
-GatherTopk::GatherTopk(const std::string & name, const void *, size_t) : mLayerName(name)
+GatherTopk::GatherTopk(const std::string & name, const void *, size_t) : TRTPluginBase(name)
 {
 }
 
@@ -48,30 +34,6 @@ const char * GatherTopk::getPluginVersion() const noexcept
 const char * GatherTopk::getPluginType() const noexcept
 {
   return PLUGIN_NAME;
-}
-
-int GatherTopk::initialize() noexcept
-{
-  return STATUS_SUCCESS;
-}
-
-void GatherTopk::terminate() noexcept
-{
-}
-
-void GatherTopk::destroy() noexcept
-{
-  delete this;
-}
-
-void GatherTopk::setPluginNamespace(const char * pluginNamespace) noexcept
-{
-  mNamespace = pluginNamespace;
-}
-
-const char * GatherTopk::getPluginNamespace() const noexcept
-{
-  return mNamespace.c_str();
 }
 
 int GatherTopk::getNbOutputs() const noexcept
@@ -202,21 +164,6 @@ const char * GatherTopkCreator::getPluginVersion() const noexcept
   return PLUGIN_VERSION;
 }
 
-const nvinfer1::PluginFieldCollection * GatherTopkCreator::getFieldNames() noexcept
-{
-  return &mFC;
-}
-
-void GatherTopkCreator::setPluginNamespace(const char * pluginNamespace) noexcept
-{
-  mNamespace = pluginNamespace;
-}
-
-const char * GatherTopkCreator::getPluginNamespace() const noexcept
-{
-  return mNamespace.c_str();
-}
-
 nvinfer1::IPluginV2 * GatherTopkCreator::createPlugin(
   const char * name, const nvinfer1::PluginFieldCollection *) noexcept
 {
@@ -234,4 +181,4 @@ nvinfer1::IPluginV2 * GatherTopkCreator::deserializePlugin(
 }
 
 REGISTER_TENSORRT_PLUGIN(GatherTopkCreator);
-}  // namespace ssd
+}  // namespace trt_plugin

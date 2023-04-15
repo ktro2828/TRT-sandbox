@@ -1,17 +1,3 @@
-// Copyright 2023 Tier IV, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 // Copyright (c) OpenMMLab. All rights reserved.
 
 #include "plugins/grid_priors.hpp"
@@ -21,7 +7,7 @@
 
 #include <assert.h>
 
-namespace ssd
+namespace trt_plugin
 {
 namespace
 {
@@ -30,12 +16,12 @@ static const char * PLUGIN_NAME{"GridPriorsTRT"};
 }  // namespace
 
 GridPriors::GridPriors(const std::string & name, const nvinfer1::Dims & stride)
-: mLayerName(name), mStride(stride)
+: TRTPluginBase(name), mStride(stride)
 {
 }
 
 GridPriors::GridPriors(const std::string & name, const void * data, size_t length)
-: mLayerName(name)
+: TRTPluginBase(name)
 {
   deserialize_value(&data, &length, &mStride);
 }
@@ -49,30 +35,6 @@ const char * GridPriors::getPluginVersion() const noexcept
 const char * GridPriors::getPluginType() const noexcept
 {
   return PLUGIN_NAME;
-}
-
-int GridPriors::initialize() noexcept
-{
-  return STATUS_SUCCESS;
-}
-
-void GridPriors::terminate() noexcept
-{
-}
-
-void GridPriors::destroy() noexcept
-{
-  delete this;
-}
-
-void GridPriors::setPluginNamespace(const char * pluginNamespace) noexcept
-{
-  mNamespace = pluginNamespace;
-}
-
-const char * GridPriors::getPluginNamespace() const noexcept
-{
-  return mNamespace.c_str();
 }
 
 int GridPriors::getNbOutputs() const noexcept
@@ -188,21 +150,6 @@ const char * GridPriorsCreator::getPluginVersion() const noexcept
   return PLUGIN_VERSION;
 }
 
-const nvinfer1::PluginFieldCollection * GridPriorsCreator::getFieldNames() noexcept
-{
-  return &mFC;
-}
-
-void GridPriorsCreator::setPluginNamespace(const char * pluginNamespace) noexcept
-{
-  mNamespace = pluginNamespace;
-}
-
-const char * GridPriorsCreator::getPluginNamespace() const noexcept
-{
-  return mNamespace.c_str();
-}
-
 nvinfer1::IPluginV2 * GridPriorsCreator::createPlugin(
   const char * name, const nvinfer1::PluginFieldCollection * fc) noexcept
 {
@@ -238,4 +185,4 @@ nvinfer1::IPluginV2 * GridPriorsCreator::deserializePlugin(
 }
 
 REGISTER_TENSORRT_PLUGIN(GridPriorsCreator);
-}  // namespace ssd
+}  // namespace trt_plugin

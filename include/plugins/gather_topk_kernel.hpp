@@ -19,12 +19,12 @@
 
 #include <cuda_runtime.h>
 
-namespace ssd
+namespace trt_plugin
 {
 template <typename scalar_t>
 void gather_topk_impl(
   const scalar_t * input, const int * indices, const int * dims, int nbDims,
   const int * indices_dims, int indices_nbDims, scalar_t * output, cudaStream_t stream);
-}  // namespace ssd
+}  // namespace trt_plugin
 
 #endif  // GATHER_TOPK_KERNEL_HPP_

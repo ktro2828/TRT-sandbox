@@ -1,5 +1,7 @@
-#ifndef TRT_SERIALIZE_HPP
-#define TRT_SERIALIZE_HPP
+// Copyright (c) OpenMMLab. All rights reserved.
+
+#ifndef TRT_SERIALIZE_HPP_
+#define TRT_SERIALIZE_HPP_
 #include <cassert>
 #include <cstring>
 #include <type_traits>
@@ -107,4 +109,4 @@ inline void deserialize_value(void const ** buffer, size_t * buffer_size, T * va
 {
   return Serializer<T>::deserialize(buffer, buffer_size, value);
 }
-#endif  // TRT_SERIALIZE_HPP
+#endif  // TRT_SERIALIZE_HPP_
