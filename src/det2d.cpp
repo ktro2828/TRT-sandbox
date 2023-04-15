@@ -76,6 +76,7 @@ int main(int argc, char * argv[])
   const Config config = {100, 0.5};
   const int max_batch_size{1};  // TODO: support 8
   const std::string precision{"FP32"};
+  const bool box_first{false};
   const bool verbose{false};
 
   std::string model_path(argv[2]);
@@ -96,18 +97,18 @@ int main(int argc, char * argv[])
   std::unique_ptr<ssd::Model> model_ptr;
   if (fs::exists(engine_path)) {
     std::cout << "[INFO] Found engine file: " << engine_path << std::endl;
-    model_ptr.reset(new ssd::Model(engine_path, verbose));
+    model_ptr.reset(new ssd::Model(engine_path, box_first, verbose));
     if (max_batch_size != model_ptr->getMaxBatchSize()) {
       std::cout << "[INFO] Required max batch size " << max_batch_size
                 << "does not correspond to Profile max batch size " << model_ptr->getMaxBatchSize()
                 << ". Rebuild engine from onnx." << std::endl;
-      model_ptr.reset(new ssd::Model(onnx_path, precision, max_batch_size, verbose));
+      model_ptr.reset(new ssd::Model(onnx_path, precision, max_batch_size, box_first, verbose));
       model_ptr->save(engine_path);
     }
   } else {
     std::cout << "[INFO] Could not find " << engine_path
               << ", try making TensorRT engine from onnx." << std::endl;
-    model_ptr.reset(new ssd::Model(onnx_path, precision, max_batch_size, verbose));
+    model_ptr.reset(new ssd::Model(onnx_path, precision, max_batch_size, box_first, verbose));
     model_ptr->save(engine_path);
   }
 

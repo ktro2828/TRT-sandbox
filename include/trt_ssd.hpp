@@ -37,6 +37,7 @@ private:
   int channel_{3};
   int width_{300};
   int height_{300};
+  bool boxes_first_{true};
 
   void load(const std::string & path);
   bool prepare();
@@ -45,10 +46,12 @@ private:
   void infer(std::vector<void *> & buffers, const int batch_size);
 
 public:
-  explicit Model(const std::string & engine_path, bool verbose = false);
+  explicit Model(
+    const std::string & engine_path, const bool boxes_first = true, bool verbose = false);
   Model(
     const std::string & onnx_path, const std::string & precision, const int max_batch_size,
-    const bool verbose = false, const size_t workspace_size = (1ULL << 30));
+    const bool boxes_first = true, const bool verbose = false,
+    const size_t workspace_size = (1ULL << 30));
 
   ~Model();
 

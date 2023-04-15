@@ -56,7 +56,8 @@ bool Model::prepare()
   return true;
 }
 
-Model::Model(const std::string & engine_path, bool verbose)
+Model::Model(const std::string & engine_path, const bool boxes_first, bool verbose)
+: boxes_first_(boxes_first)
 {
   trt::Logger logger(verbose);
   runtime_ = unique_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(logger));
@@ -69,7 +70,8 @@ Model::Model(const std::string & engine_path, bool verbose)
 
 Model::Model(
   const ::std::string & onnx_path, const std::string & precision, const int max_batch_size,
-  const bool verbose, const size_t workspace_size)
+  const bool boxes_first, const bool verbose, const size_t workspace_size)
+: boxes_first_(boxes_first)
 {
   trt::Logger logger(verbose);
   runtime_ = unique_ptr<nvinfer1::IRuntime>(nvinfer1::createInferRuntime(logger));
@@ -211,8 +213,12 @@ bool Model::detect(const cv::Mat & img, float * out_scores, float * out_boxes)
   CHECK_CUDA_ERROR(
     cudaMemcpy(input_d_.get(), input.data(), input.size() * sizeof(float), cudaMemcpyHostToDevice));
   // Should be changed depending on input(s)/output(s) order
-  // std::vector<void *> buffers{input_d_.get(), out_scores_d_.get(), out_boxes_d_.get()};
-  std::vector<void *> buffers{input_d_.get(), out_boxes_d_.get(), out_scores_d_.get()};
+  std::vector<void *> buffers;
+  if (boxes_first_) {
+    buffers = {input_d_.get(), out_boxes_d_.get(), out_scores_d_.get()};
+  } else {
+    buffers = {input_d_.get(), out_scores_d_.get(), out_boxes_d_.get()};
+  }
   try {
     infer(buffers, 1);
   } catch (const std::runtime_error & e) {
