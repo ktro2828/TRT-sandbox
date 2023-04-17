@@ -22,6 +22,29 @@ __host__ void printVec(float * v)
   std::cout << ")";
 }
 
+__host__ void initializeVec(const float e, float * v)
+{
+  for (size_t i = 0; i < N; ++i) {
+    v[i] = e;
+  }
+}
+
+template <typename... Ptrs>
+__host__ void freeHost(Ptrs... ptrs)
+{
+  for (auto p : std::initializer_list<float *>{ptrs...}) {
+    free(p);
+  }
+}
+
+template <typename... Ptrs>
+__host__ void freeDevice(Ptrs... ptrs)
+{
+  for (auto p : std::initializer_list<float *>{ptrs...}) {
+    cudaFree(p);
+  }
+}
+
 int main()
 {
   float *a, *b, *out;
@@ -33,10 +56,8 @@ int main()
   out = reinterpret_cast<float *>(malloc(sizeof(float) * N));
 
   // Initialize array
-  for (int i = 0; i < N; ++i) {
-    a[i] = 1.0f;
-    b[i] = 2.0f;
-  }
+  initializeVec(1.0f, a);
+  initializeVec(2.0f, b);
 
   // Allocate device memory
   cudaMalloc(reinterpret_cast<void **>(&d_a), sizeof(float) * N);
@@ -55,21 +76,17 @@ int main()
   addVec<<<numBlocks, threadsPerBlock>>>(d_out, d_a, d_b);
   end = std::chrono::system_clock::now();
   auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-  std::cout << "[Elapsed]: " << elapsed << " [ns]" << std::endl;
 
   // Transfer data back to host memory
   cudaMemcpy(out, d_out, sizeof(float) * N, cudaMemcpyDeviceToHost);
 
   // Display result
   printVec(out);
+  std::cout << "[Elapsed]: " << elapsed << " [ns]" << std::endl;
 
   // Deallocate device memory
-  cudaFree(d_a);
-  cudaFree(d_b);
-  cudaFree(d_out);
+  freeDevice(d_a, d_b, d_out);
 
   // Deallocate host memory
-  free(a);
-  free(b);
-  free(out);
+  freeHost(a, b, out);
 }
