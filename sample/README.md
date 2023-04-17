@@ -15,6 +15,33 @@ $ ./vector_add
 
 ## Appendix
 
+### [Thread Hierarchy](https://docs.nvidia.com/cuda/cuda-c-programming-guide/#thread-hierarchy)
+
+- **Grid** ...set of blocks
+  - **Block** ....set of threads
+    - **Thread** -> **kernel**: Called function in each thread
+
+*NOTE*: Maximum number of threads per block is 1024.
+
+<img src="./figs/memory_hierarchy.png" width=640>
+
+### [Shared Memory](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#shared-memory)
+
+- Each thread block is responsible for computing one square sub-matrix.
+  - Each thread within the block is responsible for computing one element of sub-matrix.
+  - $A_{sub}\in\mathbb{R}^{\text{BLOCKSIZE}\times\text{A.width}}$
+  - $B_{sub}\in\mathbb{R}^{\text{B.height}\times\text{BLOCKSIZE}}$
+  - $C_{sub}\in\mathbb{R}^{\text{BLOCKSIZE}\times\text{BLOCKSIZE}}$
+
+<img src="./figs/matrix-multiplication-with-shared-memory.png">
+
+- To define shared memory to store each sub-matrix, use `__shared__` memory space specifier.
+- Before stating the computation, call `__syncthreads()`.
+
+Then, A is only read `B.width / BLOCK_SIZE` times from global memory and B is read `A.height / BLOCK_SIZE` times.
+
+If shared memory is not used, A is read `B.width` times and B is read `A.height` times.
+
 ### [Execution configuration](https://docs.nvidia.com/cuda/cuda-c-programming-guide/#execution-configuration)
 
 All call to a `__global__` function must specify the execution configuration of that call. 
