@@ -36,7 +36,7 @@ $ ./vector_add
 <img src="./figs/matrix-multiplication-with-shared-memory.png">
 
 - To define shared memory to store each sub-matrix, use `__shared__` memory space specifier.
-- Before stating the computation, call `__syncthreads()`.
+- Call `__syncthreads()` both before and after stating the computation to sync shared memory.
 
 Then, A is only read `B.width / BLOCK_SIZE` times from global memory and B is read `A.height / BLOCK_SIZE` times.
 
