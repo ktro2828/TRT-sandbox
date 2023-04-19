@@ -92,6 +92,8 @@
     "typeindex": "cpp",
     "typeinfo": "cpp",
     "variant": "cpp",
-    "__nullptr": "cpp"
+    "__nullptr": "cpp",
+    "__functional_base": "cpp",
+    "locale": "cpp"
   }
 }

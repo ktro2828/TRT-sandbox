@@ -24,7 +24,7 @@ private:
   bool verbose_{true};
 
 public:
-  explicit Logger(bool verbose) : verbose_(verbose) {}
+  explicit Logger(const bool verbose) : verbose_(verbose) {}
 
   void log(Severity severity, const char * msg) noexcept override
   {
