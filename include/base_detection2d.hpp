@@ -50,7 +50,8 @@ struct ModelParams
   ModelParams(
     const std::string & head1_name_, const std::string & head2_name_, const Shape & shape_,
     const bool boxes_first_, const bool use_softmax_, const bool denormalize_box_,
-    const float threshold_ = 0.5, const int num_max_detections_ = 100)
+    const float threshold_ = 0.5, const int num_max_detections_ = 100,
+    const int max_batch_size_ = 1, const std::string & precision_ = "FP32")
   : head1_name(head1_name_),
     head2_name(head2_name_),
     shape(shape_),
@@ -58,13 +59,15 @@ struct ModelParams
     use_softmax(use_softmax_),
     denormalize_box(denormalize_box_),
     threshold(threshold_),
-    num_max_detections(num_max_detections_)
+    num_max_detections(num_max_detections_),
+    max_batch_size(max_batch_size_),
+    precision(precision_)
   {
   }
 
   void loadFromFile(const std::string & yaml_path);
 
-  void debug() const
+  inline void debug() const
   {
     std::cout << "====== [DEBUG] ModelParams =====" << std::endl;
     std::cout << "heads: (" << head1_name << ", " << head2_name << ")" << std::endl;
@@ -88,8 +91,9 @@ struct Detection2D
   inline void debug() const
   {
     std::cout << "====== [DEBUG] Detection2D =====" << std::endl;
-    std::cout << "(x, y, w, h)=(" << x << ", " << y << ", " << w << ", " << h << "), "
-              << "score=" << score << ", label=" << label << std::endl;
+    std::cout << "(x, y, w, h)=(" << x << ", " << y << ", " << w << ", " << h << ")" << std::endl;
+    std::cout << "score=" << score << std::endl;
+    std::cout << "label=" << label << std::endl;
     std::cout << "================================" << std::endl;
   }
 };  // struct Detection2D
