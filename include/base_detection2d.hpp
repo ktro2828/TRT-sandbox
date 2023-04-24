@@ -58,6 +58,11 @@ struct ModelParams
   }
 };
 
+struct Detection2D
+{
+  float x, y, w, h, score;
+};  // struct Detection2D
+
 class BaseDetection2D
 {
   template <typename T>
@@ -187,6 +192,8 @@ public:
    */
   inline int getMaxDetections() const { return engine_->getBindingDimensions(1).d[1]; }
 
+  virtual std::vector<Detection2D> postprocess(const float * scores, const float * boxes) const = 0;
+
   /**
    * @brief Calculate SoftMax
    *
@@ -204,7 +211,7 @@ public:
    * @param boxes
    * @return cv::Mat
    */
-  cv::Mat drawOutput(const cv::Mat & img, const float * scores, const float * boxes) const;
+  cv::Mat drawOutput(const cv::Mat & img, const std::vector<Detection2D> & detections) const;
 
 };  // class ModelBase
 }  // namespace trt

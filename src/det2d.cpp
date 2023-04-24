@@ -25,11 +25,12 @@ int main(int argc, char * argv[])
 
   std::string img_path(argv[1]);
   cv::Mat img = cv::imread(img_path);
+  cv::resize(img, img, cv::Size(300, 300));
 
   // TODO: support loading parameters from yaml?
   const trt::Shape input_shape = {3, 300, 300};
-  const trt::ModelParams params("boxes", "scores", input_shape, true, true, false);
-  const int max_batch_size{1};  // TODO: support 8
+  const trt::ModelParams params("scores", "boxes", input_shape, false, false, true);
+  const int max_batch_size{8};  // TODO: support 8
   const std::string precision{"FP32"};
 
   std::string model_path(argv[2]);
@@ -71,7 +72,9 @@ int main(int argc, char * argv[])
     std::make_unique<float[]>(model_ptr->getMaxBatchSize() * model_ptr->getMaxDetections() * 4);
   model_ptr->detect(img, scores.get(), boxes.get());
 
-  cv::Mat viz = model_ptr->drawOutput(img, scores.get(), boxes.get());
+  std::vector<trt::Detection2D> detections = model_ptr->postprocess(scores.get(), boxes.get());
+
+  cv::Mat viz = model_ptr->drawOutput(img, detections);
   cv::imshow("Output", viz);
   cv::waitKey(0);
 }

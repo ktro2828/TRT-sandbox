@@ -251,29 +251,16 @@ void BaseDetection2D::calculateSoftMax(std::vector<float> & scores) const
 }
 
 cv::Mat BaseDetection2D::drawOutput(
-  const cv::Mat & img, const float * scores, const float * boxes) const
+  const cv::Mat & img, const std::vector<Detection2D> & detections) const
 {
-  const auto img_w = img.cols;
-  const auto img_h = img.rows;
   cv::Mat viz = img.clone();
-  for (int i = 0; i < params_.num_max_detections; ++i) {
-    float x_min = boxes[4 * i];
-    float y_min = boxes[4 * i + 1];
-    float x_max = boxes[4 * i + 2];
-    float y_max = boxes[4 * i + 3];
-    if (params_.denormalize_box) {
-      x_min *= (img_w / params_.shape.width);
-      y_min *= (img_h / params_.shape.height);
-      x_max *= (img_w / params_.shape.width);
-      y_max *= (img_h / params_.shape.height);
-    }
-    const int x1 = std::max(0, static_cast<int>(x_min));
-    const int y1 = std::max(0, static_cast<int>(y_min));
-    const int x2 = std::min(img_w, static_cast<int>(x_max));
-    const int y2 = std::min(img_h, static_cast<int>(y_max));
+  for (const auto & det : detections) {
+    const int x1 = static_cast<int>(det.x);
+    const int y1 = static_cast<int>(det.y);
+    const int x2 = static_cast<int>(det.x + det.w);
+    const int y2 = static_cast<int>(det.y + det.h);
     cv::rectangle(viz, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 255), 1, 8);
   }
-
   return viz;
 }
 
