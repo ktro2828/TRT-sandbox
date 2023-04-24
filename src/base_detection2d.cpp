@@ -10,6 +10,36 @@
 
 namespace trt
 {
+
+void ModelParams::loadFromFile(const std::string & yaml_path)
+{
+  try {
+    std::cout << "[INFO] Parsing: " << yaml_path << std::endl;
+    YAML::Node data = YAML::LoadFile(yaml_path);
+    head1_name = data["head1_name"].as<std::string>();
+    head2_name = data["head2_name"].as<std::string>();
+    shape.width = data["width"].as<int>();
+    shape.height = data["height"].as<int>();
+    shape.channel = data["channel"].as<int>();
+    boxes_first = data["boxes_first"].as<bool>();
+    use_softmax = data["use_softmax"].as<bool>();
+    denormalize_box = data["denormalize_box"].as<bool>();
+    threshold = data["threshold"].as<float>();
+    num_max_detections = data["num_max_detections"].as<int>();
+    max_batch_size = data["max_batch_size"].as<int>();
+    precision = data["precision"].as<std::string>();
+  } catch (YAML::ParserException & e) {
+    std::cerr << e.what() << std::endl;
+    std::exit(1);
+  } catch (YAML::BadConversion & e) {
+    std::cerr << e.what() << std::endl;
+    std::exit(1);
+  } catch (YAML::BadFile & e) {
+    std::cerr << e.what() << std::endl;
+    std::exit(1);
+  }
+}
+
 void BaseDetection2D::load(const std::string & path)
 {
   std::ifstream file(path, std::ios::in | std::ios::binary);
@@ -242,12 +272,49 @@ std::optional<Dims2> BaseDetection2D::getOutputDimensions(const std::string & na
 
 void BaseDetection2D::calculateSoftMax(std::vector<float> & scores) const
 {
-  float exp_sum = std::accumulate(
-    scores.begin(), scores.end(), 0, [&](float acc, float e) { return acc + exp(e); });
+  const float exp_sum = std::accumulate(
+    scores.begin(), scores.end(), 0, [&](float acc, float e) { return acc + expf(e); });
 
   for (auto & s : scores) {
-    s = exp(s) / exp_sum;
+    s = expf(s) / exp_sum;
   }
+}
+
+std::vector<Detection2D> BaseDetection2D::postprocess(
+  const float * scores, const float * boxes, const std::vector<std::string> & labels) const
+{
+  std::vector<float> score_vector;
+  const size_t num_classes = labels.size();
+  for (int i = 0; i < params_.num_max_detections; ++i) {
+    score_vector.push_back(i);
+  }
+  if (params_.use_softmax) {
+    calculateSoftMax(score_vector);
+  }
+  std::vector<float>::iterator iter = std::max_element(score_vector.begin(), score_vector.end());
+  size_t index = std::distance(score_vector.begin(), iter);
+  size_t box_index = 4 * index;
+  size_t label_index = index % num_classes;
+  float x1, y1, x2, y2;
+  if (params_.denormalize_box) {
+    x1 = boxes[box_index] * params_.shape.width;
+    y1 = boxes[box_index + 1] * params_.shape.height;
+    x2 = boxes[box_index + 2] * params_.shape.width;
+    y2 = boxes[box_index + 3] * params_.shape.height;
+  } else {
+    x1 = boxes[box_index];
+    y1 = boxes[box_index + 1];
+    x2 = boxes[box_index + 2];
+    y2 = boxes[box_index + 3];
+  }
+
+  x1 = std::max(0.0f, x1);
+  y1 = std::max(0.0f, y1);
+  x2 = std::min(static_cast<float>(params_.shape.width), x2);
+  y2 = std::min(static_cast<float>(params_.shape.height), y2);
+
+  Detection2D det = {x1, y1, x2, y2, score_vector[index], labels[label_index]};
+  return {det};
 }
 
 cv::Mat BaseDetection2D::drawOutput(
@@ -260,6 +327,7 @@ cv::Mat BaseDetection2D::drawOutput(
     const int x2 = static_cast<int>(det.x + det.w);
     const int y2 = static_cast<int>(det.y + det.h);
     cv::rectangle(viz, cv::Point(x1, y1), cv::Point(x2, y2), cv::Scalar(0, 0, 255), 1, 8);
+    cv::putText(viz, det.label, cv::Point(x1, y1), 1, 1, cv::Scalar(0, 0, 255));
   }
   return viz;
 }

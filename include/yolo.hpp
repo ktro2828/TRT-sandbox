@@ -32,7 +32,6 @@ public:
     const std::string & onnx_path, const ModelParams & params, const std::string & precision,
     const int max_batch_size, const bool verbose = false, size_t workspace_size = (1ULL << 30));
 
-  std::vector<Detection2D> postprocess(const float * scores, const float * boxes) const override;
 };  // class YOLO
 }  // namespace trt
 

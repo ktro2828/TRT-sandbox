@@ -46,5 +46,9 @@ foreach(libName ${TRT_PLUGINS})
 endforeach()
 message("TRT_PLUGIN_LIBS: " ${TRT_PLUGIN_LIBS})
 
+# For 3rdparty
+set(THIRD_PARTY_DIR ${PROJECT_SOURCE_DIR}/3rdparty)
+add_subdirectory(${THIRD_PARTY_DIR}/yaml-cpp)
+
 # For subdirectories
 add_subdirectory(src)

@@ -6,6 +6,8 @@ A sandbox of TensorRT.
 
 ```shell
 # Build
+$ git clone https://github.com/ktro2828/trt-sandbox.git --recursive
+$ cd trt-sandbox
 $ mkdir build && cd build
 $ cmake ..
 $ make -j$(nproc)

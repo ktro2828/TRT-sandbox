@@ -8,6 +8,7 @@
 
 #include <NvInfer.h>
 #include <cuda_runtime.h>
+#include <yaml-cpp/yaml.h>
 
 #include <memory>
 #include <optional>
@@ -39,8 +40,12 @@ struct ModelParams
   bool boxes_first;
   bool use_softmax;
   bool denormalize_box;
-  float threshold;
-  int num_max_detections;
+  float threshold{0.5};
+  int num_max_detections{1000};
+  int max_batch_size{1};
+  std::string precision{"FP32"};
+
+  explicit ModelParams(const std::string & yaml_path) { loadFromFile(yaml_path); }
 
   ModelParams(
     const std::string & head1_name_, const std::string & head2_name_, const Shape & shape_,
@@ -56,11 +61,37 @@ struct ModelParams
     num_max_detections(num_max_detections_)
   {
   }
+
+  void loadFromFile(const std::string & yaml_path);
+
+  void debug() const
+  {
+    std::cout << "====== [DEBUG] ModelParams =====" << std::endl;
+    std::cout << "heads: (" << head1_name << ", " << head2_name << ")" << std::endl;
+    std::cout << "shape: (" << shape.channel << ", " << shape.height << ", " << shape.width << ")"
+              << std::endl;
+    std::cout << "boxes_first: " << boxes_first << std::endl;
+    std::cout << "use_softmax: " << use_softmax << std::endl;
+    std::cout << "denormalize_box: " << denormalize_box << std::endl;
+    std::cout << "threshold: " << threshold << std::endl;
+    std::cout << "num_max_detections: " << num_max_detections << std::endl;
+    std::cout << "max_batch_size: " << max_batch_size << std::endl;
+    std::cout << "precision: " << precision << std::endl;
+    std::cout << "================================" << std::endl;
+  }
 };
 
 struct Detection2D
 {
   float x, y, w, h, score;
+  std::string label;
+  inline void debug() const
+  {
+    std::cout << "====== [DEBUG] Detection2D =====" << std::endl;
+    std::cout << "(x, y, w, h)=(" << x << ", " << y << ", " << w << ", " << h << "), "
+              << "score=" << score << ", label=" << label << std::endl;
+    std::cout << "================================" << std::endl;
+  }
 };  // struct Detection2D
 
 class BaseDetection2D
@@ -192,7 +223,8 @@ public:
    */
   inline int getMaxDetections() const { return engine_->getBindingDimensions(1).d[1]; }
 
-  virtual std::vector<Detection2D> postprocess(const float * scores, const float * boxes) const = 0;
+  virtual std::vector<Detection2D> postprocess(
+    const float * scores, const float * boxes, const std::vector<std::string> & labels) const;
 
   /**
    * @brief Calculate SoftMax

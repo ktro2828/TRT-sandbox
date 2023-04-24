@@ -11,7 +11,9 @@
 #include <dlfcn.h>
 #endif
 
+#include <fstream>
 #include <string>
+#include <vector>
 
 inline void loadLibrary(const std::string & path)
 {
@@ -34,4 +36,20 @@ inline void loadLibrary(const std::string & path)
 #endif
   }
 }
+
+std::vector<std::string> readLabelFile(const std::string & filepath)
+{
+  std::ifstream label_file(filepath);
+  if (!label_file.is_open()) {
+    std::cerr << "[ERROR] Fail to open file: " << filepath << std::endl;
+    std::exit(1);
+  }
+  std::vector<std::string> labels;
+  std::string label_name;
+  while (getline(label_file, label_name)) {
+    labels.push_back(label_name);
+  }
+  return labels;
+}
+
 #endif  // COMMON_UTILS_HPP_

@@ -12,8 +12,14 @@ target_include_directories(grid_priors_plugin
 
 add_library(trt_base SHARED base_detection2d.cpp)
 
-target_link_libraries(trt_base ${TRT_PLUGINS} ${TRT_PLUGIN_LIBS}
-                      ${CUDA_LIBRARIES} ${CUBLAS_LIBRARIES} ${CUDNN_LIBRARIES})
+target_link_libraries(
+  trt_base
+  ${TRT_PLUGINS}
+  ${TRT_PLUGIN_LIBS}
+  ${CUDA_LIBRARIES}
+  ${CUBLAS_LIBRARIES}
+  ${CUDNN_LIBRARIES}
+  ${CMAKE_BINARY_DIR}/3rdparty/yaml-cpp/libyaml-cpp.a)
 
 target_include_directories(trt_base PUBLIC ${PROJECT_SOURCE_DIR}/include)
 

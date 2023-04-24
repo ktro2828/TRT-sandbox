@@ -16,22 +16,33 @@ namespace fs = ::std::filesystem;
 #include <memory>
 #include <string>
 
+void USAGE()
+{
+  std::cout << "[USAGE] ./src/det2d <IMG_PATH> <ENGINE_OR_ONNX_PATH> <LABEL_PATH> <CONFIG_PATH>"
+            << std::endl;
+}
+
 int main(int argc, char * argv[])
 {
-  if (argc != 3) {
-    std::cerr << "[ERROR] You must specify input path of image and engine!!" << std::endl;
+  if (argc != 5) {
+    std::cerr << "[ERROR] You must specify input path of image, engine, labels and param!!"
+              << std::endl;
+    USAGE();
     std::exit(1);
   }
 
+  std::string param_path(argv[4]);
+  const trt::ModelParams params(param_path);
+  params.debug();
+  const int max_batch_size = params.max_batch_size;
+  const std::string precision = params.precision;
+
   std::string img_path(argv[1]);
   cv::Mat img = cv::imread(img_path);
-  cv::resize(img, img, cv::Size(300, 300));
+  cv::resize(img, img, cv::Size(params.shape.width, params.shape.height));
 
-  // TODO: support loading parameters from yaml?
-  const trt::Shape input_shape = {3, 300, 300};
-  const trt::ModelParams params("scores", "boxes", input_shape, false, false, true);
-  const int max_batch_size{8};  // TODO: support 8
-  const std::string precision{"FP32"};
+  std::string label_path(argv[3]);
+  std::vector<std::string> labels = readLabelFile(label_path);
 
   std::string model_path(argv[2]);
   std::string engine_path, onnx_path;
@@ -72,7 +83,10 @@ int main(int argc, char * argv[])
     std::make_unique<float[]>(model_ptr->getMaxBatchSize() * model_ptr->getMaxDetections() * 4);
   model_ptr->detect(img, scores.get(), boxes.get());
 
-  std::vector<trt::Detection2D> detections = model_ptr->postprocess(scores.get(), boxes.get());
+  std::vector<trt::Detection2D> detections =
+    model_ptr->postprocess(scores.get(), boxes.get(), labels);
+
+  std::for_each(detections.begin(), detections.end(), [&](const auto & d) { d.debug(); });
 
   cv::Mat viz = model_ptr->drawOutput(img, detections);
   cv::imshow("Output", viz);
