@@ -24,6 +24,7 @@ void ModelParams::loadFromFile(const std::string & yaml_path)
     boxes_first = data["boxes_first"].as<bool>();
     use_softmax = data["use_softmax"].as<bool>();
     denormalize_box = data["denormalize_box"].as<bool>();
+    highest_only = data["highest_only"].as<bool>();
     threshold = data["threshold"].as<float>();
     num_max_detections = data["num_max_detections"].as<int>();
     max_batch_size = data["max_batch_size"].as<int>();
@@ -273,7 +274,7 @@ std::optional<Dims2> BaseDetection2D::getOutputDimensions(const std::string & na
 void BaseDetection2D::calculateSoftMax(std::vector<float> & scores) const
 {
   const float exp_sum = std::accumulate(
-    scores.begin(), scores.end(), 0, [&](float acc, float e) { return acc + expf(e); });
+    scores.begin(), scores.end(), 0, [](float acc, const float e) { return acc + expf(e); });
 
   for (auto & s : scores) {
     s = expf(s) / exp_sum;
@@ -286,35 +287,66 @@ std::vector<Detection2D> BaseDetection2D::postprocess(
   std::vector<float> score_vector;
   const size_t num_classes = labels.size();
   for (int i = 0; i < params_.num_max_detections; ++i) {
-    score_vector.push_back(i);
+    score_vector.push_back(scores[i]);
   }
   if (params_.use_softmax) {
     calculateSoftMax(score_vector);
   }
-  std::vector<float>::iterator iter = std::max_element(score_vector.begin(), score_vector.end());
-  size_t index = std::distance(score_vector.begin(), iter);
-  size_t box_index = 4 * index;
-  size_t label_index = index % num_classes;
-  float x1, y1, x2, y2;
-  if (params_.denormalize_box) {
-    x1 = boxes[box_index] * params_.shape.width;
-    y1 = boxes[box_index + 1] * params_.shape.height;
-    x2 = boxes[box_index + 2] * params_.shape.width;
-    y2 = boxes[box_index + 3] * params_.shape.height;
+  std::vector<Detection2D> detections;
+  if (params_.highest_only) {
+    std::vector<float>::iterator iter = std::max_element(score_vector.begin(), score_vector.end());
+    size_t index = std::distance(score_vector.begin(), iter);
+    size_t box_index = 4 * index;
+    float x1, y1, x2, y2;
+    if (params_.denormalize_box) {
+      x1 = boxes[box_index] * params_.shape.width;
+      y1 = boxes[box_index + 1] * params_.shape.height;
+      x2 = boxes[box_index + 2] * params_.shape.width;
+      y2 = boxes[box_index + 3] * params_.shape.height;
+    } else {
+      x1 = boxes[box_index];
+      y1 = boxes[box_index + 1];
+      x2 = boxes[box_index + 2];
+      y2 = boxes[box_index + 3];
+    }
+    x1 = std::max(0.0f, x1);
+    y1 = std::max(0.0f, y1);
+    x2 = std::min(static_cast<float>(params_.shape.width), x2);
+    y2 = std::min(static_cast<float>(params_.shape.height), y2);
+
+    const size_t label_index = index % num_classes;
+    Detection2D det = {x1, y1, x2 - x1, y2 - y1, score_vector[index], labels[label_index]};
+    detections.emplace_back(det);
   } else {
-    x1 = boxes[box_index];
-    y1 = boxes[box_index + 1];
-    x2 = boxes[box_index + 2];
-    y2 = boxes[box_index + 3];
+    for (int i = 0; i < params_.num_max_detections; ++i) {
+      if (score_vector.at(i) < params_.threshold) {
+        continue;
+      }
+      const size_t box_index = 4 * i;
+      float x1, y1, x2, y2;
+      if (params_.denormalize_box) {
+        x1 = boxes[box_index] * params_.shape.width;
+        y1 = boxes[box_index + 1] * params_.shape.height;
+        x2 = boxes[box_index + 2] * params_.shape.width;
+        y2 = boxes[box_index + 3] * params_.shape.height;
+      } else {
+        x1 = boxes[box_index];
+        y1 = boxes[box_index + 1];
+        x2 = boxes[box_index + 2];
+        y2 = boxes[box_index + 3];
+      }
+
+      x1 = std::max(0.0f, x1);
+      y1 = std::max(0.0f, y1);
+      x2 = std::min(static_cast<float>(params_.shape.width), x2);
+      y2 = std::min(static_cast<float>(params_.shape.height), y2);
+
+      const size_t label_index = i % num_classes;
+      Detection2D det = {x1, y1, x2 - x1, y2 - y1, score_vector[i], labels[label_index]};
+      detections.emplace_back(det);
+    }
   }
-
-  x1 = std::max(0.0f, x1);
-  y1 = std::max(0.0f, y1);
-  x2 = std::min(static_cast<float>(params_.shape.width), x2);
-  y2 = std::min(static_cast<float>(params_.shape.height), y2);
-
-  Detection2D det = {x1, y1, x2, y2, score_vector[index], labels[label_index]};
-  return {det};
+  return detections;
 }
 
 cv::Mat BaseDetection2D::drawOutput(

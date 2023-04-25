@@ -16,7 +16,7 @@ namespace fs = ::std::filesystem;
 #include <memory>
 #include <string>
 
-void USAGE()
+inline void USAGE()
 {
   std::cout << "[USAGE] ./src/det2d <IMG_PATH> <ENGINE_OR_ONNX_PATH> <LABEL_PATH> <CONFIG_PATH>"
             << std::endl;

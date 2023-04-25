@@ -6,7 +6,8 @@ channel: 3
 boxes_first: "true"
 use_softmax: "false"
 denormalize_box: "false"
-threshold: 0.5
-num_max_detections: 100
+highest_only: "true"
+threshold: 0.1
+num_max_detections: 1000
 max_batch_size: 1
 precision: "FP32"

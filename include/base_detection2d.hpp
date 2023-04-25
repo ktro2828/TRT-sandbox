@@ -40,6 +40,7 @@ struct ModelParams
   bool boxes_first;
   bool use_softmax;
   bool denormalize_box;
+  bool highest_only{false};
   float threshold{0.5};
   int num_max_detections{1000};
   int max_batch_size{1};
@@ -50,14 +51,16 @@ struct ModelParams
   ModelParams(
     const std::string & head1_name_, const std::string & head2_name_, const Shape & shape_,
     const bool boxes_first_, const bool use_softmax_, const bool denormalize_box_,
-    const float threshold_ = 0.5, const int num_max_detections_ = 100,
-    const int max_batch_size_ = 1, const std::string & precision_ = "FP32")
+    const bool highest_only_ = false, const float threshold_ = 0.5,
+    const int num_max_detections_ = 100, const int max_batch_size_ = 1,
+    const std::string & precision_ = "FP32")
   : head1_name(head1_name_),
     head2_name(head2_name_),
     shape(shape_),
     boxes_first(boxes_first_),
     use_softmax(use_softmax_),
     denormalize_box(denormalize_box_),
+    highest_only(highest_only_),
     threshold(threshold_),
     num_max_detections(num_max_detections_),
     max_batch_size(max_batch_size_),

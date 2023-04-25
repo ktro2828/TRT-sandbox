@@ -1,0 +1,13 @@
+head1_name: "scores"
+head2_name: "boxes"
+width: 300
+height: 300
+channel: 3
+boxes_first: "false"
+use_softmax: "false"
+denormalize_box: "true"
+highest_only: "true"
+threshold: 0.1
+num_max_detections: 1000
+max_batch_size: 8
+precision: "FP32"
