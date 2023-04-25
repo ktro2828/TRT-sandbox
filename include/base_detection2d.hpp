@@ -34,12 +34,9 @@ public:
 
 struct ModelParams
 {
-  std::string head1_name;
-  std::string head2_name;
   Shape shape;
-  bool boxes_first;
-  bool use_softmax;
-  bool denormalize_box;
+  bool is_box_first;
+  bool is_box_normalized;
   bool highest_only{false};
   float threshold{0.5};
   int num_max_detections{1000};
@@ -49,17 +46,13 @@ struct ModelParams
   explicit ModelParams(const std::string & yaml_path) { loadFromFile(yaml_path); }
 
   ModelParams(
-    const std::string & head1_name_, const std::string & head2_name_, const Shape & shape_,
-    const bool boxes_first_, const bool use_softmax_, const bool denormalize_box_,
+    const bool is_box_first_, const bool is_box_normalized_, const Shape & shape_,
     const bool highest_only_ = false, const float threshold_ = 0.5,
     const int num_max_detections_ = 100, const int max_batch_size_ = 1,
     const std::string & precision_ = "FP32")
-  : head1_name(head1_name_),
-    head2_name(head2_name_),
+  : is_box_first(is_box_first_),
+    is_box_normalized(is_box_normalized_),
     shape(shape_),
-    boxes_first(boxes_first_),
-    use_softmax(use_softmax_),
-    denormalize_box(denormalize_box_),
     highest_only(highest_only_),
     threshold(threshold_),
     num_max_detections(num_max_detections_),
@@ -73,12 +66,10 @@ struct ModelParams
   inline void debug() const
   {
     std::cout << "====== [DEBUG] ModelParams =====" << std::endl;
-    std::cout << "heads: (" << head1_name << ", " << head2_name << ")" << std::endl;
+    std::cout << "is_box_first: " << is_box_first << std::endl;
+    std::cout << "is_box_normalized: " << is_box_normalized << std::endl;
     std::cout << "shape: (" << shape.channel << ", " << shape.height << ", " << shape.width << ")"
               << std::endl;
-    std::cout << "boxes_first: " << boxes_first << std::endl;
-    std::cout << "use_softmax: " << use_softmax << std::endl;
-    std::cout << "denormalize_box: " << denormalize_box << std::endl;
     std::cout << "threshold: " << threshold << std::endl;
     std::cout << "num_max_detections: " << num_max_detections << std::endl;
     std::cout << "max_batch_size: " << max_batch_size << std::endl;
@@ -208,10 +199,10 @@ public:
   /**
    * @brief Get the Output Dimensions from head name
    *
-   * @param name
+   * @param index
    * @return std::optional<Dims2>
    */
-  std::optional<Dims2> getOutputDimensions(const std::string & name) const;
+  std::optional<Dims2> getOutputDimensions(const size_t index) const;
 
   /**
    * @brief Get the Maximum Number of Batch Size
@@ -232,15 +223,6 @@ public:
 
   virtual std::vector<Detection2D> postprocess(
     const float * scores, const float * boxes, const std::vector<std::string> & labels) const;
-
-  /**
-   * @brief Calculate SoftMax
-   *
-   * @param src
-   * @param dst
-   * @param size
-   */
-  void calculateSoftMax(std::vector<float> & scores) const;
 
   /**
    * @brief Draw output boxes on image

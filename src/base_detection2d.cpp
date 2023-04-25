@@ -16,14 +16,11 @@ void ModelParams::loadFromFile(const std::string & yaml_path)
   try {
     std::cout << "[INFO] Parsing: " << yaml_path << std::endl;
     YAML::Node data = YAML::LoadFile(yaml_path);
-    head1_name = data["head1_name"].as<std::string>();
-    head2_name = data["head2_name"].as<std::string>();
+    is_box_first = data["is_box_first"].as<bool>();
+    is_box_normalized = data["is_box_normalized"].as<bool>();
     shape.width = data["width"].as<int>();
     shape.height = data["height"].as<int>();
     shape.channel = data["channel"].as<int>();
-    boxes_first = data["boxes_first"].as<bool>();
-    use_softmax = data["use_softmax"].as<bool>();
-    denormalize_box = data["denormalize_box"].as<bool>();
     highest_only = data["highest_only"].as<bool>();
     threshold = data["threshold"].as<float>();
     num_max_detections = data["num_max_detections"].as<int>();
@@ -239,7 +236,7 @@ void BaseDetection2D::detect(
     cudaMemcpy(input_d_.get(), input.data(), sizeof(float) * input.size(), cudaMemcpyHostToDevice));
 
   std::vector<void *> buffers;
-  if (params_.boxes_first) {
+  if (params_.is_box_first) {
     buffers = {input_d_.get(), boxes_d_.get(), scores_d_.get()};
   } else {
     buffers = {input_d_.get(), scores_d_.get(), boxes_d_.get()};
@@ -260,29 +257,13 @@ Shape BaseDetection2D::getInputShape() const
   return {dims.d[1], dims.d[2], dims.d[3]};
 }
 
-std::optional<Dims2> BaseDetection2D::getOutputDimensions(const std::string & name) const
+std::optional<Dims2> BaseDetection2D::getOutputDimensions(const size_t index) const
 {
-  auto index = engine_->getBindingIndex(name.c_str());
-  if (index == -1) {
-    return std::nullopt;
-  } else {
+  if (index == 1 || index == 2) {
     auto dims = engine_->getBindingDimensions(index);
     return Dims2(dims.d[1], dims.d[2]);
   }
-}
-
-void BaseDetection2D::calculateSoftMax(std::vector<float> & scores) const
-{
-  float max_val = *std::max_element(scores.begin(), scores.end());
-  float sum = 0.0f;
-  for (size_t i = 0; i < scores.size(); ++i) {
-    scores[i] = std::exp(scores[i] - max_val);
-    sum += scores[i];
-  }
-
-  for (size_t i = 0; i < scores.size(); ++i) {
-    scores[i] /= sum;
-  }
+  return std::nullopt;
 }
 
 std::vector<Detection2D> BaseDetection2D::postprocess(
@@ -293,16 +274,13 @@ std::vector<Detection2D> BaseDetection2D::postprocess(
   for (int i = 0; i < params_.num_max_detections; ++i) {
     score_vector.push_back(scores[i]);
   }
-  if (params_.use_softmax) {
-    calculateSoftMax(score_vector);
-  }
   std::vector<Detection2D> detections;
   if (params_.highest_only) {
     std::vector<float>::iterator iter = std::max_element(score_vector.begin(), score_vector.end());
     size_t index = std::distance(score_vector.begin(), iter);
     size_t box_index = 4 * index;
     float x1, y1, x2, y2;
-    if (params_.denormalize_box) {
+    if (params_.is_box_normalized) {
       x1 = boxes[box_index] * params_.shape.width;
       y1 = boxes[box_index + 1] * params_.shape.height;
       x2 = boxes[box_index + 2] * params_.shape.width;
@@ -328,7 +306,7 @@ std::vector<Detection2D> BaseDetection2D::postprocess(
       }
       const size_t box_index = 4 * i;
       float x1, y1, x2, y2;
-      if (params_.denormalize_box) {
+      if (params_.is_box_normalized) {
         x1 = boxes[box_index] * params_.shape.width;
         y1 = boxes[box_index + 1] * params_.shape.height;
         x2 = boxes[box_index + 2] * params_.shape.width;

@@ -34,8 +34,6 @@ int main(int argc, char * argv[])
   std::string param_path(argv[4]);
   const trt::ModelParams params(param_path);
   params.debug();
-  const int max_batch_size = params.max_batch_size;
-  const std::string precision = params.precision;
 
   std::string img_path(argv[1]);
   cv::Mat img = cv::imread(img_path);
@@ -63,17 +61,17 @@ int main(int argc, char * argv[])
   if (fs::exists(engine_path)) {
     std::cout << "[INFO] Found engine file: " << engine_path << std::endl;
     model_ptr.reset(new trt::SSD(engine_path, params));
-    if (max_batch_size != model_ptr->getMaxBatchSize()) {
-      std::cout << "[INFO] Required max batch size " << max_batch_size
+    if (params.max_batch_size != model_ptr->getMaxBatchSize()) {
+      std::cout << "[INFO] Required max batch size " << params.max_batch_size
                 << "does not correspond to Profile max batch size " << model_ptr->getMaxBatchSize()
                 << ". Rebuild engine from onnx." << std::endl;
-      model_ptr.reset(new trt::SSD(onnx_path, params, precision, max_batch_size));
+      model_ptr.reset(new trt::SSD(onnx_path, params, params.precision, params.max_batch_size));
       model_ptr->save(engine_path);
     }
   } else {
     std::cout << "[INFO] Could not find " << engine_path
               << ", try making TensorRT engine from onnx." << std::endl;
-    model_ptr.reset(new trt::SSD(onnx_path, params, precision, max_batch_size));
+    model_ptr.reset(new trt::SSD(onnx_path, params, params.precision, params.max_batch_size));
     model_ptr->save(engine_path);
   }
 

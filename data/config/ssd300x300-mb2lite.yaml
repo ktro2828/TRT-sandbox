@@ -1,11 +1,8 @@
-head1_name: "scores"
-head2_name: "boxes"
+is_box_first: "false"
+is_box_normalized: "true"
 width: 300
 height: 300
 channel: 3
-boxes_first: "false"
-use_softmax: "false"
-denormalize_box: "true"
 highest_only: "true"
 threshold: 0.1
 num_max_detections: 1000
