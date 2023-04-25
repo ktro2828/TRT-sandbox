@@ -273,11 +273,15 @@ std::optional<Dims2> BaseDetection2D::getOutputDimensions(const std::string & na
 
 void BaseDetection2D::calculateSoftMax(std::vector<float> & scores) const
 {
-  const float exp_sum = std::accumulate(
-    scores.begin(), scores.end(), 0, [](float acc, const float e) { return acc + expf(e); });
+  float max_val = *std::max_element(scores.begin(), scores.end());
+  float sum = 0.0f;
+  for (size_t i = 0; i < scores.size(); ++i) {
+    scores[i] = std::exp(scores[i] - max_val);
+    sum += scores[i];
+  }
 
-  for (auto & s : scores) {
-    s = expf(s) / exp_sum;
+  for (size_t i = 0; i < scores.size(); ++i) {
+    scores[i] /= sum;
   }
 }
 
