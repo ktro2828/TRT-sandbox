@@ -1,3 +1,7 @@
 -std=c++17
 -Wall
 --pedantic-errors
+-DDEBUG
+-I./include
+-I/usr/include
+-I/usr/local/cuda
