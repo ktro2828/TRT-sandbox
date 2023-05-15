@@ -2,6 +2,7 @@
 #define TRT_BASE_HPP_
 
 #include "utils/cuda_utils.hpp"
+#include "utils/npp_utils.hpp"
 #include "utils/trt_utils.hpp"
 
 #include <opencv2/opencv.hpp>

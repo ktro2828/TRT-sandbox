@@ -202,6 +202,7 @@ std::vector<float> BaseDetection2D::preprocess(const cv::Mat & img) const
   cv::cvtColor(img, rgb, cv::COLOR_BGR2RGB);
 
   cv::resize(rgb, rgb, cv::Size(params_.shape.width, params_.shape.height));
+  // npp::resize(rgb.data, rgb.cols, rgb.rows, params_.shape.width, params_.shape.height, stream_);
   cv::Mat img_float;
   rgb.convertTo(img_float, CV_32FC3, 1 / 255.0);
 

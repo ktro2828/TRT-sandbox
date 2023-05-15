@@ -19,6 +19,9 @@ target_link_libraries(
   ${CUDA_LIBRARIES}
   ${CUBLAS_LIBRARIES}
   ${CUDNN_LIBRARIES}
+  ${CUDA_npp_LIBRARY}
+  ${CUDA_nppc_LIBRARY}
+  ${CUDA_npps_LIBRARY}
   ${CMAKE_BINARY_DIR}/3rdparty/yaml-cpp/libyaml-cpp.a)
 
 target_include_directories(trt_base PUBLIC ${PROJECT_SOURCE_DIR}/include)
