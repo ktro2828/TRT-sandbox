@@ -233,8 +233,8 @@ void BaseDetection2D::detect(
 {
   const auto input_shape = getInputShape();
   const auto input = preprocess(img);
-  CHECK_CUDA_ERROR(
-    cudaMemcpy(input_d_.get(), input.data(), sizeof(float) * input.size(), cudaMemcpyHostToDevice));
+  CHECK_CUDA_ERROR(cudaMemcpyAsync(
+    input_d_.get(), input.data(), sizeof(float) * input.size(), cudaMemcpyHostToDevice, stream_));
 
   std::vector<void *> buffers;
   if (params_.is_box_first) {
@@ -246,9 +246,10 @@ void BaseDetection2D::detect(
   infer(buffers, batch_size);
 
   CHECK_CUDA_ERROR(cudaMemcpyAsync(
-    scores, scores_d_.get(), sizeof(float) * getMaxDetections(), cudaMemcpyDeviceToHost));
+    scores, scores_d_.get(), sizeof(float) * getMaxDetections(), cudaMemcpyDeviceToHost, stream_));
   CHECK_CUDA_ERROR(cudaMemcpyAsync(
-    boxes, boxes_d_.get(), sizeof(float) * getMaxDetections() * 4, cudaMemcpyDeviceToHost));
+    boxes, boxes_d_.get(), sizeof(float) * getMaxDetections() * 4, cudaMemcpyDeviceToHost,
+    stream_));
   cudaStreamSynchronize(stream_);
 }
 
