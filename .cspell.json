@@ -1,3 +1,11 @@
 {
-  "words": ["denormalize", "dets", "nvinfer", "onnx", "softmax", "yolo"]
+  "words": [
+    "denormalize",
+    "dets",
+    "Nsight",
+    "nvinfer",
+    "onnx",
+    "softmax",
+    "yolo"
+  ]
 }
