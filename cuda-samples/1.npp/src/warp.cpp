@@ -7,7 +7,6 @@
 int main()
 {
   cv::Mat src = cv::imread("imgs/sample.jpeg");
-  cv::Mat dst;
 
   uint8_t *cudaSrc, *cudaDst;
   cudaMalloc(reinterpret_cast<void **>(&cudaSrc), src.rows * src.cols * 3);
@@ -39,7 +38,7 @@ int main()
   cudaMemcpyAsync(cpuDst, cudaDst, src.rows * src.step, cudaMemcpyDeviceToHost);
   cv::Mat nppDst = cv::Mat(src.rows, src.cols, src.type(), cpuDst, src.step);
 
-  cv::imwrite("npp.png", nppDst);
+  cv::imwrite("warp.png", nppDst);
 
   return 0;
 }
