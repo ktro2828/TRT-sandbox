@@ -32,10 +32,11 @@ target_link_libraries(trt_ssd gather_topk_plugin grid_priors_plugin)
 target_include_directories(trt_ssd PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 # === yolo ===
-add_library(trt_yolo SHARED yolo.cpp)
-target_include_directories(trt_yolo PUBLIC ${PROJECT_SOURCE_DIR}/include)
+# add_library(trt_yolo SHARED yolo.cpp)
+# target_include_directories(trt_yolo PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 add_executable(det2d det2d.cpp)
 target_include_directories(det2d PUBLIC ${OpenCV_INCLUDE_DIRS}
                                         ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(det2d PUBLIC ${OpenCV_LIBS} trt_base trt_ssd trt_yolo)
+# target_link_libraries(det2d PUBLIC ${OpenCV_LIBS} trt_base trt_ssd trt_yolo)
+target_link_libraries(det2d PUBLIC ${OpenCV_LIBS} trt_base trt_ssd)
