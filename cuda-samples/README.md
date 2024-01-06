@@ -2,6 +2,7 @@
 
 ## FYI
 - [About CUDA programming](https://docs.google.com/presentation/d/1kHNbpyWP6_DiiUgXYAEA6kuzFNGFc6UnbqTclk_DpF0/edit?pli=1#slide=id.p)
+- [brucefan1983/CUDA-Programming](https://github.com/brucefan1983/CUDA-Programming)
 
 ## Run
 - Compile with `cmake`
