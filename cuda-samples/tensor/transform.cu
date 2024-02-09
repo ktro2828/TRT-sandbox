@@ -35,21 +35,22 @@ __global__ void transform_trajectory_kernel(
       const float sin_val = std::sin(center_yaw[b]);
 
       // transform
-      const float trans_x = cos_val * x - sin_val * y + center_xyz[b * 3];
-      const float trans_y = sin_val * x + cos_val * y + center_xyz[b * 3 + 1];
-      const float trans_vx = cos_val * vx - sin_val * vy + center_xyz[b * 3];
-      const float trans_vy = sin_val * vx + cos_val * vy + center_xyz[b * 3 + 1];
+      const float trans_x = cos_val * x - sin_val * y - center_xyz[b * 3];
+      const float trans_y = sin_val * x + cos_val * y - center_xyz[b * 3 + 1];
+      const float trans_vx = cos_val * vx - sin_val * vy;
+      const float trans_vy = sin_val * vx + cos_val * vy;
 
-      output[(b * N * T + idx) * D] = trans_x;
-      output[(b * N * T + idx) * D + 1] = trans_y;
-      output[(b * N * T + idx) * D + 2] = z;
-      output[(b * N * T + idx) * D + 3] = dx;
-      output[(b * N * T + idx) * D + 4] = dy;
-      output[(b * N * T + idx) * D + 5] = dz;
-      output[(b * N * T + idx) * D + 6] = yaw;
-      output[(b * N * T + idx) * D + 7] = trans_vx;
-      output[(b * N * T + idx) * D + 8] = trans_vy;
-      output[(b * N * T + idx) * D + 9] = is_valid;
+      const int trans_idx = (b * N * T + idx) * D;
+      output[trans_idx] = trans_x;
+      output[trans_idx + 1] = trans_y;
+      output[trans_idx + 2] = z;
+      output[trans_idx + 3] = dx;
+      output[trans_idx + 4] = dy;
+      output[trans_idx + 5] = dz;
+      output[trans_idx + 6] = yaw - center_yaw[b];
+      output[trans_idx + 7] = trans_vx;
+      output[trans_idx + 8] = trans_vy;
+      output[trans_idx + 9] = is_valid;
     }
   }
 }
