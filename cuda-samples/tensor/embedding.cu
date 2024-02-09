@@ -12,7 +12,6 @@
  * @param trajectory The array of trajectory, in shape (B*N*T*D).
  * @param out_time Output time embeddings, in shape (B*N*T*(T+1)).
  * @param out_yaw Output heading embeddings, in shape (B*N*T*2), ordering (sin, cos).
- * @return __global__
  */
 __global__ void generate_embedding_kernel(
   const int B, const int N, const int T, const int D, const float * timestamps,
@@ -23,15 +22,12 @@ __global__ void generate_embedding_kernel(
   int t = blockIdx.z * blockDim.z + threadIdx.z;
 
   if (b < B && n < N && t < T) {
-    // NOTE: time embedding is OK
     const int idx = b * N * T + n * T + t;
     out_time[idx] = 0.0f;
     out_time[idx * (T + 1) + t] = 1.0f;
     out_time[idx * (T + 1) + T] = timestamps[t];
 
-    // TODO
     const float yaw = trajectory[idx * D + 6];
-    out_yaw[idx] = 0.0f;
     out_yaw[idx * 2] = std::sin(yaw);
     out_yaw[idx * 2 + 1] = std::cos(yaw);
   }
@@ -77,7 +73,7 @@ int main()
       {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 0.5 * M_PI, 3.0f, 0.1f, 0.0f}}}};
 
   float *d_timestamps, *d_trajectory, *d_out_time, *d_out_yaw;
-  const size_t InTrajSize = sizeof(float) * N * T * D;
+  const size_t InTrajSize = sizeof(float) * B * N * T * D;
   const size_t OutTimeSize = sizeof(float) * B * N * T * (T + 1);
   const size_t OutYawSize = sizeof(float) * B * N * T * 2;
   cudaMalloc(reinterpret_cast<void **>(&d_timestamps), sizeof(float) * T);
