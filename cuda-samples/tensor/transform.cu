@@ -54,6 +54,22 @@ __global__ void transform_trajectory_kernel(
   }
 }
 
+__global__ void extract_last_pos_kernel(
+  const int B, const int N, const int T, const int D, const float * in_trajectory, float * output)
+{
+  int b = blockIdx.x * blockDim.x + threadIdx.x;
+  int n = blockIdx.y * blockDim.y + threadIdx.y;
+  int t = blockIdx.z * blockDim.z + threadIdx.z;
+  if (b < B && t == T - 1) {
+    const int idx = b * N * T + n * T + t;
+    const int out_idx = b * N + n;
+    output[out_idx] = 0.0f;
+    output[out_idx * 3] = in_trajectory[idx * D];
+    output[out_idx * 3 + 1] = in_trajectory[idx * D + 1];
+    output[out_idx * 3 + 2] = in_trajectory[idx * D + 2];
+  }
+}
+
 int main()
 {
   constexpr int B = 2;   // Batch size
@@ -65,20 +81,20 @@ int main()
      {2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f},
      {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
      {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 1.0f},
-     {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 1.0f}},
+     {1.0f, 1.0f, 1.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 1.0f}},
     {{2.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
      {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
      {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
      {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
-     {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f}},
+     {2.0f, 2.0f, 2.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f}},
     {{2.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
      {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
      {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
      {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
-     {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f}}};
+     {3.0f, 3.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f}}};
 
-  float h_xyz[B][3] = {{1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}};  // (x, y, z)[m]
-  float h_yaw[B] = {1.0f, 1.0f};                                 // [deg]
+  float h_xyz[B][3] = {{1.0f, 1.0f, 1.0f}, {2.0f, 2.0f, 2.0f}};  // (x, y, z)[m]
+  float h_yaw[B] = {1.0f, 0.0f};                                 // [deg]
 
   float *d_src, *d_xyz, *d_yaw, *d_dst;
   const size_t in_size = sizeof(float) * N * T * D;
@@ -99,6 +115,7 @@ int main()
   float h_dst[B][N][T][D];
   cudaMemcpy(h_dst, d_dst, out_size, cudaMemcpyDeviceToHost);
 
+  std::cout << "Transform coords to the target centric coords..." << std::endl;
   for (int b = 0; b < B; ++b) {
     std::cout << "Batch " << b << ":\n";
     for (int n = 0; n < N; ++n) {
@@ -113,8 +130,29 @@ int main()
     }
   }
 
+  float * d_last_pos;
+  cudaMalloc(reinterpret_cast<void **>(&d_last_pos), sizeof(float) * B * N * 3);
+  dim3 nBlocks(B, N, T);
+  extract_last_pos_kernel<<<nBlocks, 256>>>(B, N, T, D, d_dst, d_last_pos);
+
+  float h_last_pos[B][N][3];
+  cudaMemcpy(h_last_pos, d_last_pos, sizeof(float) * B * N * 3, cudaMemcpyDeviceToHost);
+
+  std::cout << "Extract last positions..." << std::endl;
+  for (int b = 0; b < B; ++b) {
+    std::cout << "Batch " << b << ":\n";
+    for (int n = 0; n < N; ++n) {
+      std::cout << "  Agent " << n << ": ";
+      for (int i = 0; i < 3; ++i) {
+        std::cout << h_last_pos[b][n][i] << " ";
+      }
+      std::cout << "\n";
+    }
+  }
+
   cudaFree(d_src);
   cudaFree(d_xyz);
   cudaFree(d_yaw);
   cudaFree(d_dst);
+  cudaFree(d_last_pos);
 }
