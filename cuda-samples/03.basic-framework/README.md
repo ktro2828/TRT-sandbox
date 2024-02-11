@@ -46,9 +46,21 @@ cudaError_t cudaFree(void * address);
 
 ```c++
 cudaError_t cudaMemcpy(
-    void                *dst,
-    const void          *src,
-    size_t              count,
-    enum cudaMemcpyKind kind
+    void                *dst,  //...コピー先のアドレス
+    const void          *src,  //...ソースデータのアドレス
+    size_t              count, //...バイトサイズ
+    enum cudaMemcpyKind kind   //...コピー方法
 );
 ```
+
+### Correspondence between data and threads in CUDA kernel
+
+`add1.cu`ではブロック数`128`でグリッド数`10^8/128`のカーネル呼び出しをしている。
+
+カーネル定義時の要件としては、以下がある
+- カーネルの戻り値は必ず`void`
+- カーネルは必ず`__global__`修飾子を持つ
+- カーネルをオーバロードすることは可能
+- カーネルのパラメータ数は動的ではならない
+- カーネルはメンバ関数として定義してはならない
+- 動的並列処理を使用しない限り、カーネル内でカーネルを呼び出せない
