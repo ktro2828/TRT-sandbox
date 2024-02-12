@@ -40,6 +40,29 @@ __global__ void find_break_index_kernel(
  * @brief
  *
  * @param B The number of targets.
+ * @param K The number of polylines for model input.
+ * @param N The number of source polylines.
+ * @param in_polylines (N, )
+ * @param output (B * K * )
+ */
+__global__ void generate_polyline_kernel(
+  const int B, const int K, const int N, const float * in_polylines, float * output)
+{
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  // if N > K:
+  //    polylines_centers = in_polylines[..., 0:2].sum(dim=1) / mask.sum(dim=1)
+  //    center_offsets[B * 2] = (center_offset_x, center_offset_y).repeat(B)
+  //    Rotate(center_offsets, center_yaw)
+  //    map_centers = center_xyz[.., 0:2] + center_offsets
+  //    disntaces = Distance(map_centers - polylines_centers)
+  //    topk_idx = TopK(disntace, k=K);;
+  // else:
+}
+
+/**
+ * @brief
+ *
+ * @param B The number of targets.
  * @param K The number of polylines.
  * @param P The number of points for each polyline.
  * @param D The number of dimensions for each point.
