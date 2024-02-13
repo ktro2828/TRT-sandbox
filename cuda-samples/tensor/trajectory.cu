@@ -157,7 +157,8 @@ __device__ void concatenate_agent_data(
     out_data[out_idx + C + 2 + T + 1 + 3] = trajectory[idx * D + 8];
     out_data[out_idx + C + 2 + T + 1 + 4] = trajectory[idx * D + 9];
     out_data[out_idx + C + 2 + T + 1 + 5] = trajectory[idx * D + 10];
-    out_mask[out_idx + dim - 1] = static_cast<bool>(trajectory[idx * D + D - 1]);
+
+    out_mask[out_idx + dim - 1] = trajectory[idx * D + D - 1] == 1.0f ? true : false;
   }
 }
 
@@ -285,7 +286,7 @@ int main()
   printf("Processing time = %g ms.\n", elapsed_time);
 
   float h_out_data[B][N][T][D - 2 + C + 2 + 2 + T + 1], h_out_last_pos[B][N][3];
-  float h_out_mask[B][N][T];
+  bool h_out_mask[B][N][T];
 
   cudaMemcpy(h_out_data, d_out_data, outDataSize, cudaMemcpyDeviceToHost);
   cudaMemcpy(h_out_mask, d_out_mask, outMaskSize, cudaMemcpyDeviceToHost);

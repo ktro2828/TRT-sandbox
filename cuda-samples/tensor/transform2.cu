@@ -29,7 +29,9 @@ __global__ void transform_trajectory_kernel(
     const float yaw = in_trajectory[src_idx * D + 6];
     const float vx = in_trajectory[src_idx * D + 7];
     const float vy = in_trajectory[src_idx * D + 8];
-    const float is_valid = in_trajectory[src_idx * D + 9];
+    const float ax = in_trajectory[src_idx * D + 9];
+    const float ay = in_trajectory[src_idx * D + 10];
+    const float is_valid = in_trajectory[src_idx * D + 11];
 
     // transform for each target
     const int tgt_idx = (target_index[b] * T + T - 1) * D;
@@ -40,13 +42,13 @@ __global__ void transform_trajectory_kernel(
     const float cos_val = cos(tgt_yaw);
     const float sin_val = sin(tgt_yaw);
 
-    printf("b: %i, i: %i, (x, y)=(%f, %f), yaw=%f\n", b, target_index[b], tgt_x, tgt_y, tgt_yaw);
-
     // transform
     const float trans_x = cos_val * x - sin_val * y - tgt_x;
     const float trans_y = sin_val * x + cos_val * y - tgt_y;
     const float trans_vx = cos_val * vx - sin_val * vy;
     const float trans_vy = sin_val * vx + cos_val * vy;
+    const float trans_ax = cos_val * ax - sin_val * ay;
+    const float trans_ay = sin_val * ax + cos_val * ay;
 
     const int trans_idx = (b * N * T + n * T + t) * D;
     output[trans_idx] = trans_x;
@@ -58,7 +60,9 @@ __global__ void transform_trajectory_kernel(
     output[trans_idx + 6] = yaw - tgt_yaw;
     output[trans_idx + 7] = trans_vx;
     output[trans_idx + 8] = trans_vy;
-    output[trans_idx + 9] = is_valid;
+    output[trans_idx + 9] = trans_ax;
+    output[trans_idx + 10] = trans_ay;
+    output[trans_idx + 11] = is_valid;
   }
 }
 
@@ -81,26 +85,40 @@ __global__ void extract_last_pos_kernel(
 int main()
 {
   constexpr int B = 2;   // Batch size
-  constexpr int N = 3;   // The number of agents
+  constexpr int N = 4;   // The number of agents
   constexpr int T = 5;   // The number of timestamps
-  constexpr int D = 10;  // The number of state dimensions
+  constexpr int D = 12;  // The number of state dimensions
   float h_src[N][T][D] = {
-    {{1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
-     {2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f},
-     {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
-     {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 1.0f},
-     {10.0f, 20.0f, 1.0f, 0.1f, 0.2f, 1.0f, 0.5f, 3.0f, 0.1f, 1.0f}},
-    {{2.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
-     {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
-     {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
-     {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
-     {30.0f, 40.0f, 2.0f, 0.1f, 0.2f, 1.0f, 0.25f, 3.0f, 0.1f, 0.0f}},
-    {{2.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
-     {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
-     {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
-     {1.0f, 2.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f},
-     {3.0f, 3.0f, 3.0f, 0.1f, 0.2f, 1.0f, 2.0f, 3.0f, 0.1f, 0.0f}}};
-  int h_target_index[B] = {0, 1};
+    {
+      {1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, M_PI / 2, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+      {2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, M_PI / 2, 2.0f, 2.0f, 2.0f, 2.0f, 1.0f},
+      {3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, M_PI / 2, 3.0f, 3.0f, 3.0f, 3.0f, 1.0f},
+      {4.0f, 4.0f, 4.0f, 4.0f, 4.0f, 4.0f, M_PI / 2, 4.0f, 4.0f, 4.0f, 4.0f, 1.0f},
+      {5.0f, 5.0f, 5.0f, 5.0f, 5.0f, 5.0f, M_PI / 2, 5.0f, 5.0f, 5.0f, 5.0f, 1.0f},
+    },
+    {
+      {2.0f, 2.0f, 2.0f, 2.0f, 2.0f, 2.0f, M_PI / 2, 2.0f, 2.0f, 2.0f, 2.0f, 0.0f},
+      {3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, M_PI / 2, 3.0f, 3.0f, 3.0f, 3.0f, 0.0f},
+      {4.0f, 4.0f, 4.0f, 4.0f, 4.0f, 4.0f, M_PI / 2, 4.0f, 4.0f, 4.0f, 4.0f, 1.0f},
+      {5.0f, 5.0f, 5.0f, 5.0f, 5.0f, 5.0f, M_PI / 2, 5.0f, 5.0f, 5.0f, 5.0f, 0.0f},
+      {6.0f, 6.0f, 6.0f, 6.0f, 6.0f, 6.0f, M_PI / 2, 6.0f, 6.0f, 6.0f, 6.0f, 1.0f},
+    },
+    {
+      {3.0f, 3.0f, 3.0f, 3.0f, 3.0f, 3.0f, M_PI / 2, 3.0f, 3.0f, 3.0f, 3.0f, 1.0f},
+      {4.0f, 4.0f, 4.0f, 4.0f, 4.0f, 4.0f, M_PI / 2, 4.0f, 4.0f, 4.0f, 4.0f, 1.0f},
+      {5.0f, 5.0f, 5.0f, 5.0f, 5.0f, 5.0f, M_PI / 2, 5.0f, 5.0f, 5.0f, 5.0f, 1.0f},
+      {6.0f, 6.0f, 6.0f, 6.0f, 6.0f, 6.0f, M_PI / 2, 6.0f, 6.0f, 6.0f, 6.0f, 1.0f},
+      {7.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f, M_PI / 2, 7.0f, 7.0f, 7.0f, 7.0f, 1.0f},
+    },
+    {
+      {4.0f, 4.0f, 4.0f, 4.0f, 4.0f, 4.0f, M_PI / 2, 4.0f, 4.0f, 4.0f, 4.0f, 0.0f},
+      {5.0f, 5.0f, 5.0f, 5.0f, 5.0f, 5.0f, M_PI / 2, 5.0f, 5.0f, 5.0f, 5.0f, 1.0f},
+      {6.0f, 6.0f, 6.0f, 6.0f, 6.0f, 6.0f, M_PI / 2, 6.0f, 6.0f, 6.0f, 6.0f, 0.0f},
+      {7.0f, 7.0f, 7.0f, 7.0f, 7.0f, 7.0f, M_PI / 2, 7.0f, 7.0f, 7.0f, 7.0f, 0.0f},
+      {8.0f, 8.0f, 8.0f, 8.0f, 8.0f, 8.0f, M_PI / 2, 8.0f, 8.0f, 8.0f, 8.0f, 1.0f},
+    },
+  };
+  int h_target_index[B] = {0, 2};
 
   float *d_src, *d_dst;
   int * d_target_index;
@@ -113,7 +131,7 @@ int main()
   cudaMemcpy(d_target_index, h_target_index, sizeof(int) * B, cudaMemcpyHostToDevice);
 
   dim3 blocks(B, N, T);
-  transform_trajectory_kernel<<<blocks, 256>>>(B, N, T, D, d_src, d_target_index, d_dst);
+  transform_trajectory_kernel<<<blocks, 1023>>>(B, N, T, D, d_src, d_target_index, d_dst);
 
   float h_dst[B][N][T][D];
   cudaMemcpy(h_dst, d_dst, out_size, cudaMemcpyDeviceToHost);
