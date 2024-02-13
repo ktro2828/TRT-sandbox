@@ -31,23 +31,28 @@ __global__ void transform_trajectory_kernel(
 
     // transform for each target
     for (int b = 0; b < B; ++b) {
+      const float center_x = center_xyz[b * 3];
+      const float center_y = center_xyz[b * 3 + 1];
+      const float center_z = center_xyz[b * 3 + 2];
       const float cos_val = std::cos(center_yaw[b]);
       const float sin_val = std::sin(center_yaw[b]);
 
       // transform
-      const float trans_x = cos_val * x - sin_val * y - center_xyz[b * 3];
-      const float trans_y = sin_val * x + cos_val * y - center_xyz[b * 3 + 1];
+      const float trans_x = cos_val * (x - center_x) - sin_val * (y - center_y);
+      const float trans_y = sin_val * (x - center_x) + cos_val * (y - center_y);
+      const float trans_z = z - center_z;
+      const float trans_yaw = yaw - center_yaw[b];
       const float trans_vx = cos_val * vx - sin_val * vy;
       const float trans_vy = sin_val * vx + cos_val * vy;
 
       const int trans_idx = (b * N * T + idx) * D;
       output[trans_idx] = trans_x;
       output[trans_idx + 1] = trans_y;
-      output[trans_idx + 2] = z;
+      output[trans_idx + 2] = trans_z;
       output[trans_idx + 3] = dx;
       output[trans_idx + 4] = dy;
       output[trans_idx + 5] = dz;
-      output[trans_idx + 6] = yaw - center_yaw[b];
+      output[trans_idx + 6] = trans_yaw;
       output[trans_idx + 7] = trans_vx;
       output[trans_idx + 8] = trans_vy;
       output[trans_idx + 9] = is_valid;

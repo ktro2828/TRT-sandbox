@@ -30,13 +30,16 @@ __device__ void transform_trajectory(
     const int center_idx = (target_index[b] * T + T - 1) * D;
     const float center_x = in_trajectory[center_idx];
     const float center_y = in_trajectory[center_idx + 1];
+    const float center_z = in_trajectory[center_idx + 2];
     const float center_yaw = in_trajectory[center_idx + 6];
     const float cos_val = std::cos(center_yaw);
     const float sin_val = std::sin(center_yaw);
 
     // transform
-    const float trans_x = cos_val * x - sin_val * y - center_x;
-    const float trans_y = sin_val * x + cos_val * y - center_y;
+    const float trans_x = cos_val * (x - center_x) - sin_val * (y - center_y);
+    const float trans_y = sin_val * (x - center_x) + cos_val * (y - center_y);
+    const float trans_z = z - center_z;
+    const float trans_yaw = yaw - center_yaw;
     const float trans_vx = cos_val * vx - sin_val * vy;
     const float trans_vy = sin_val * vx + cos_val * vy;
     const float trans_ax = cos_val * ax - sin_val * ay;
@@ -45,11 +48,11 @@ __device__ void transform_trajectory(
     const int trans_idx = (b * N * T + n * T + t) * D;
     output[trans_idx] = trans_x;
     output[trans_idx + 1] = trans_y;
-    output[trans_idx + 2] = z;
+    output[trans_idx + 2] = trans_z;
     output[trans_idx + 3] = dx;
     output[trans_idx + 4] = dy;
     output[trans_idx + 5] = dz;
-    output[trans_idx + 6] = yaw - center_yaw;
+    output[trans_idx + 6] = trans_yaw;
     output[trans_idx + 7] = trans_vx;
     output[trans_idx + 8] = trans_vy;
     output[trans_idx + 9] = trans_ax;

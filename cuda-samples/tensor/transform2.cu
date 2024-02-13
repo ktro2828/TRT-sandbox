@@ -38,13 +38,16 @@ __global__ void transform_trajectory_kernel(
 
     const float tgt_x = in_trajectory[tgt_idx];
     const float tgt_y = in_trajectory[tgt_idx + 1];
+    const float tgt_z = in_trajectory[tgt_idx + 2];
     const float tgt_yaw = in_trajectory[tgt_idx + 6];
     const float cos_val = cos(tgt_yaw);
     const float sin_val = sin(tgt_yaw);
 
     // transform
-    const float trans_x = cos_val * x - sin_val * y - tgt_x;
-    const float trans_y = sin_val * x + cos_val * y - tgt_y;
+    const float trans_x = cos_val * (x - tgt_x) - sin_val * (y - tgt_y);
+    const float trans_y = sin_val * (x - tgt_x) + cos_val * (y - tgt_y);
+    const float trans_z = z - tgt_z;
+    const float trans_yaw = yaw - tgt_yaw;
     const float trans_vx = cos_val * vx - sin_val * vy;
     const float trans_vy = sin_val * vx + cos_val * vy;
     const float trans_ax = cos_val * ax - sin_val * ay;
@@ -53,11 +56,11 @@ __global__ void transform_trajectory_kernel(
     const int trans_idx = (b * N * T + n * T + t) * D;
     output[trans_idx] = trans_x;
     output[trans_idx + 1] = trans_y;
-    output[trans_idx + 2] = z;
+    output[trans_idx + 2] = trans_z;
     output[trans_idx + 3] = dx;
     output[trans_idx + 4] = dy;
     output[trans_idx + 5] = dz;
-    output[trans_idx + 6] = yaw - tgt_yaw;
+    output[trans_idx + 6] = trans_yaw;
     output[trans_idx + 7] = trans_vx;
     output[trans_idx + 8] = trans_vy;
     output[trans_idx + 9] = trans_ax;

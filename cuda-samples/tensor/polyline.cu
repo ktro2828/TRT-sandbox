@@ -86,13 +86,16 @@ __global__ void transform_polyline_kernel(
     const float type_id = polylines[idx * D + 6];
 
     for (int b = 0; b < B; ++b) {
+      const float center_x = center_xyz[b * 3];
+      const float center_y = center_xyz[b * 3 + 1];
+      const float center_z = center_xyz[b * 3 + 2];
       const float cos_val = std::cos(center_yaw[b]);
       const float sin_val = std::sin(center_yaw[b]);
 
       // transform
-      const float trans_x = cos_val * x - sin_val * y - center_xyz[b * 3];
-      const float trans_y = sin_val * x + cos_val * y - center_xyz[b * 3 + 1];
-      const float trans_z = z;
+      const float trans_x = cos_val * (x - center_x) - sin_val * (y - center_y);
+      const float trans_y = sin_val * (x - center_x) + cos_val * (y - center_y);
+      const float trans_z = z - center_z;
       const float trans_dx = cos_val * dx - sin_val * dy;
       const float trans_dy = sin_val * dx + cos_val * dy;
       const float trans_dz = dz;

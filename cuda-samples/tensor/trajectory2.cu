@@ -34,6 +34,7 @@ __global__ void agentPreprocessKernel(
   const int center_idx = (target_index[b] * T + T - 1) * D;
   const float center_x = in_trajectory[center_idx];
   const float center_y = in_trajectory[center_idx + 1];
+  const float center_z = in_trajectory[center_idx + 2];
   const float center_yaw = in_trajectory[center_idx + 6];
   printf(
     "target_index: %i, center_idx: %i, (x, y)=(%f, %f), yaw=%f\n", target_index[b], center_idx,
@@ -42,9 +43,9 @@ __global__ void agentPreprocessKernel(
   const float center_sin = sin(center_yaw);
 
   // do transform
-  const float trans_x = center_cos * (x - center_x) - center_sin * (y + center_y) + center_x;
-  const float trans_y = center_sin * (x - center_x) + center_cos * (y + center_y) + center_y;
-  const float trans_z = z;
+  const float trans_x = center_cos * (x - center_x) - center_sin * (y - center_y);
+  const float trans_y = center_sin * (x - center_x) + center_cos * (y - center_y);
+  const float trans_z = z - center_z;
   const float trans_yaw = yaw - center_yaw;
   const float trans_vx = center_cos * vx - center_sin * vy;
   const float trans_vy = center_sin * vx + center_cos * vy;
