@@ -36,9 +36,6 @@ __global__ void agentPreprocessKernel(
   const float center_y = in_trajectory[center_idx + 1];
   const float center_z = in_trajectory[center_idx + 2];
   const float center_yaw = in_trajectory[center_idx + 6];
-  printf(
-    "target_index: %i, center_idx: %i, (x, y)=(%f, %f), yaw=%f\n", target_index[b], center_idx,
-    center_x, center_y, center_yaw);
   const float center_cos = cos(center_yaw);
   const float center_sin = sin(center_yaw);
 
