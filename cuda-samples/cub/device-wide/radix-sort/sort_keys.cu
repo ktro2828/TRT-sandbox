@@ -22,18 +22,18 @@ std::ostream & operator<<(std::ostream & os, const std::vector<T> & v)
 
 int main()
 {
-  std::vector<float> keys{8.0f, 6.0f, 7.0f, 5.0f, 3.0f, 0.0f, 9.0f};
+  std::vector<float> h_keys{8.0f, 6.0f, 7.0f, 5.0f, 3.0f, 0.0f, 9.0f};
   std::cout << "[Before]:\n";
   std::cout << "keys: ";
-  std::cout << keys << std::endl;
+  std::cout << h_keys << std::endl;
 
-  size_t num_items = keys.size();
+  size_t num_items = h_keys.size();
   float *d_keys_in, *d_keys_out;
 
   cudaMalloc(&d_keys_in, sizeof(float) * num_items);
   cudaMalloc(&d_keys_out, sizeof(float) * num_items);
 
-  cudaMemcpy(d_keys_in, keys.data(), sizeof(float) * num_items, cudaMemcpyHostToDevice);
+  cudaMemcpy(d_keys_in, h_keys.data(), sizeof(float) * num_items, cudaMemcpyHostToDevice);
 
   // Determine temporary device storage requirements
   void * d_temp_storage{nullptr};
